@@ -579,11 +579,11 @@
       <div class="rounded-2xl border-[2.5px] border-[var(--ink)] bg-[var(--paper)] p-5 space-y-4">
         <h2 id="setup-title" class="dela text-lg text-[var(--ink)]">YT-DLP.EXE NOT FOUND</h2>
         <p class="text-xs text-[var(--ink)]">
-          PLADAZ uses standalone <code class="mono bg-[var(--chip)] px-1.5 py-0.5 rounded">yt-dlp.exe</code> placed next to <code class="mono bg-[var(--chip)] px-1.5 py-0.5 rounded">PLADAZ.exe</code> so you can update the extractor anytime without reinstalling the app.
+          PLADAZ uses a separate <code class="mono bg-[var(--chip)] px-1.5 py-0.5 rounded">yt-dlp.exe</code> in <code class="mono bg-[var(--chip)] px-1.5 py-0.5 rounded">_internal\bin\</code> so you can update the extractor anytime without reinstalling the app.
         </p>
         <div class="rounded-xl border-2 border-[var(--ink)] bg-[var(--soft)] p-3 space-y-1">
           <div class="sil text-xs text-[var(--violet)] font-bold">EXPECTED LOCATION</div>
-          <div id="setup-expected-path" class="mono text-xs text-[var(--ink)] break-all selectable">[app folder]\yt-dlp.exe</div>
+          <div id="setup-expected-path" class="mono text-xs text-[var(--ink)] break-all selectable">[app folder]\_internal\bin\yt-dlp.exe</div>
         </div>
         <div id="setup-status-box" class="rounded-xl border-2 border-[var(--ink)] bg-[var(--warn)] text-[var(--warn-ink)] p-3 text-xs font-medium">
           Click <strong>DOWNLOAD YT-DLP</strong> to fetch the official release from GitHub, or <strong>LOCATE FILE…</strong> if you already downloaded <code class="mono">yt-dlp.exe</code>.
@@ -826,7 +826,7 @@
         <!-- Third-Party Notices Drawer (Approved Proposal #4) -->
         <div id="about-notices-panel" class="hidden rounded-xl border-2 border-[var(--ink)] bg-[var(--soft)] p-3 text-xs space-y-1.5 max-h-[150px] overflow-y-auto selectable">
           <div class="sil text-xs font-bold text-[var(--violet)]">THIRD-PARTY OPEN SOURCE NOTICES</div>
-          <p><strong>yt-dlp:</strong> Released into the Public Domain (The Unlicense). External standalone executable.</p>
+          <p><strong>yt-dlp:</strong> Released into the Public Domain (The Unlicense). Separate executable in <code class="mono">_internal\bin\</code>, updatable from Settings.</p>
           <p><strong>FFmpeg:</strong> Licensed under the GPLv2+ / GPLv3+ (<code class="mono">https://ffmpeg.org</code>, bundled release build).</p>
           <p><strong>Fonts:</strong> Dela Gothic One, Silkscreen, IBM Plex Sans Thai, and IBM Plex Mono are licensed under the SIL Open Font License 1.1 (OFL-1.1).</p>
           <p><strong>Python Packages:</strong> mutagen (GPLv2+), Pillow (HPND), psutil (BSD-3-Clause), pywebview (BSD-3-Clause).</p>

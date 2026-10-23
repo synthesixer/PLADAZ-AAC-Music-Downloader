@@ -8,7 +8,7 @@ Their respective licenses and copyright notices are detailed below:
 1. yt-dlp
    - Website: https://github.com/yt-dlp/yt-dlp
    - License: The Unlicense (Public Domain dedication)
-   - Usage: External standalone executable placed alongside PLADAZ.exe.
+   - Usage: Separate executable bundled at _internal/bin/yt-dlp.exe; updatable in-app.
 
 2. FFmpeg (gyan.dev release_full build)
    - Website: https://ffmpeg.org / https://www.gyan.dev/ffmpeg/builds/
