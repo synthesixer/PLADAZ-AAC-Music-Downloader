@@ -1,0 +1,12 @@
+{
+    "name": "pladaz-ui",
+    "version": "1.0.0",
+    "private": true,
+    "description": "PLADAZ Frontend Build Pipeline (Tailwind CSS -> ui/app.built.css)",
+    "scripts": {
+        "build:css": "tailwindcss -i ./ui_src/input.css -o ./ui/app.built.css --minify"
+    },
+    "devDependencies": {
+        "tailwindcss": "^3.4.17"
+    }
+}

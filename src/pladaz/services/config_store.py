@@ -15,6 +15,7 @@ from pladaz.services.logger import PladazLogger
 # [Proposal] Key name for cover art requirement switch in config.json (SYSTEM_DESIGN.md 2.5(5) & (7))
 # Isolated in a single constant so it can be updated in one place if changed later.
 CONFIG_KEY_REQUIRE_ALBUM_ART: str = "require_album_art"
+CONFIG_KEY_MUSICBRAINZ_USER_AGENT: str = "musicbrainz_user_agent"
 
 SCHEMA_VERSION: int = 1
 
@@ -27,6 +28,7 @@ def get_default_config() -> dict[str, Any]:
         "destination_path": "",
         "cookies_file_path": None,
         CONFIG_KEY_REQUIRE_ALBUM_ART: False,
+        CONFIG_KEY_MUSICBRAINZ_USER_AGENT: "",
     }
 
 
@@ -194,4 +196,8 @@ class ConfigHistoryStore:
             "entries": serialized_entries,
         }
         self._atomic_write_json(self.history_path, payload)
+
+    def clear_history(self) -> None:
+        """Clear all entries in history.json atomically (Board 07)."""
+        self._atomic_write_json(self.history_path, get_default_history_payload())
 

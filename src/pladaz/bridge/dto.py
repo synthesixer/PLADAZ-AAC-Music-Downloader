@@ -60,6 +60,18 @@ def task_to_dto(task: TrackTask) -> dict[str, Any]:
         "has_cover": bool(task.metadata and task.metadata.cover_jpeg),
         "warnings": list(task.warnings),
         "error": structured_error_to_dto(task.error),
+        "validation": (
+            {
+                "is_valid": bool(task.validation_result.is_valid),
+                "is_readable": bool(task.validation_result.is_readable),
+                "is_aac_lc": bool(task.validation_result.is_aac_lc),
+                "has_title": bool(task.validation_result.has_title),
+                "has_cover": bool(task.validation_result.has_cover),
+                "error_code": task.validation_result.error_code,
+            }
+            if task.validation_result is not None
+            else None
+        ),
     }
 
 

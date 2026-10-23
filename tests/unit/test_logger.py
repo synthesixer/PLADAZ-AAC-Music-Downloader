@@ -1,6 +1,9 @@
 """Unit tests for PladazLogger and sensitive data redaction (TC-017, TC-032)."""
 
 from pathlib import Path
+import pytest
+
+pytestmark = pytest.mark.unit
 
 from pladaz.domain.enums import Stage
 from pladaz.domain.errors import ErrorCode

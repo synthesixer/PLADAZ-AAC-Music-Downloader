@@ -1,6 +1,9 @@
 """Unit tests for ConfigHistoryStore (TC-029 config persistence part, TC-030)."""
 
 from pathlib import Path
+import pytest
+
+pytestmark = pytest.mark.unit
 
 from pladaz.domain.enums import TaskStatus
 from pladaz.domain.errors import ErrorCode

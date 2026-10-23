@@ -3,6 +3,8 @@
 from pathlib import Path
 import pytest
 
+pytestmark = pytest.mark.unit
+
 from pladaz.domain.errors import ErrorCode, PathTooLongError
 from pladaz.domain.models import TrackMetadata
 from pladaz.services.folder_organizer import (
@@ -78,7 +80,8 @@ def test_tc011_missing_album_artist_fallback_and_unknown_artist_folder(
         album="Mystery Album",
     )
     target2 = organizer.build_target_path(tmp_path, meta_fallback2)
-    assert target2 == tmp_path / UNKNOWN_ARTIST_FOLDER / "Mystery Album" / "Mystery Song.m4a"
+    assert target2 == tmp_path / "Unknown Artist" / "Mystery Album" / "Mystery Song.m4a"
+    assert UNKNOWN_ARTIST_FOLDER == "Unknown Artist"
     assert meta_fallback2.album_artist is None
     assert meta_fallback2.track_artist is None
 

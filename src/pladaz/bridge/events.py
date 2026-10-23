@@ -77,10 +77,20 @@ class EventDispatcher:
             except Exception:
                 pass
 
-    def emit_queue_updated(self, tasks: list[TrackTask]) -> None:
+    def emit_queue_updated(
+        self,
+        tasks: list[TrackTask],
+        queue_running: Optional[bool] = None,
+        queue_halted: Optional[bool] = None,
+    ) -> None:
+        payload: dict[str, Any] = {"tasks": [task_to_dto(t) for t in tasks]}
+        if queue_running is not None:
+            payload["queue_running"] = bool(queue_running)
+        if queue_halted is not None:
+            payload["queue_halted"] = bool(queue_halted)
         self.dispatch(
             self.EVENT_QUEUE_UPDATED,
-            {"tasks": [task_to_dto(t) for t in tasks]},
+            payload,
         )
 
     def emit_task_progress(
@@ -102,10 +112,20 @@ class EventDispatcher:
             },
         )
 
-    def emit_task_status_changed(self, task: TrackTask) -> None:
+    def emit_task_status_changed(
+        self,
+        task: TrackTask,
+        queue_running: Optional[bool] = None,
+        queue_halted: Optional[bool] = None,
+    ) -> None:
+        payload: dict[str, Any] = {"task": task_to_dto(task)}
+        if queue_running is not None:
+            payload["queue_running"] = bool(queue_running)
+        if queue_halted is not None:
+            payload["queue_halted"] = bool(queue_halted)
         self.dispatch(
             self.EVENT_TASK_STATUS_CHANGED,
-            {"task": task_to_dto(task)},
+            payload,
         )
 
     def emit_task_conflict_prompt(

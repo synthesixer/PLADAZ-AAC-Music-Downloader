@@ -1,6 +1,6 @@
 # PLADAZ — Design Direction & Handoff
 
-Oct 23, 2026 · @Eq
+Oct 23, 2026 · @Ga
 
 ## Part A — Reference Analysis
 
@@ -158,18 +158,34 @@ Contrast: ข้อความทุกคู่ที่ใช้ใน Mockup
 - **สองภาษาภาพแทนภาษาเดียว** (New Proposal): เพิ่มความซับซ้อนให้ Designer แต่ได้สัญญาณ "ระบบกำลังพูดเรื่องสำคัญ" ที่ไม่ต้องพึ่งสีแดง
 - **UI ภาษาอังกฤษ** (สมมติฐาน): ตามชื่อสถานะในเอกสารโปรเจกต์ และฟอนต์พิกเซลไม่รองรับไทย ถ้าต้องการ UI ไทย ป้ายระบบต้องเปลี่ยนเป็น IBM Plex Sans Thai ตัวหนา
 
-## Part C — Visual Mockup
+## Part C — Visual Mockup (Music Edition · 20 Artboards: Boards 01–20)
 
-Mockup อยู่ใน Canvas [PLADAZ UI Mockup](https://claude.ai/artifact/93afoeQ6JPQcnt24EoZnD3) มี 4 หน้าจอ ใช้ข้อมูลเพลงสมมติทั้งหมด (ชื่อศิลปินและอัลบั้มแต่งขึ้น) ตัวเลขในวงเล็บเหลี่ยม เช่น \[21.4\] GB เป็นค่าตัวอย่าง Mockup ใช้สื่อสารแนวทางเท่านั้น ไม่ได้แปลว่าฟังก์ชันใช้งานได้แล้ว
+Mockup ฉบับสมบูรณ์อยู่ในไฟล์ [`Doc/PLADAZ UI Mockup(2).html`](file:///e:/Doc/Code/randombullshit/PLADAZV2/Doc/PLADAZ%20UI%20Mockup(2).html) มี 20 อาร์ตบอร์ด (`01`–`20` โดยบอร์ด `12` ถูกตัดออกตามการตัดสินใจ Phase 4 ให้เพิ่มเพลงทั้งหมดจากเพลย์ลิสต์/อัลบั้มเข้าคิวโดยตรง):
 
-| หน้าจอ | หน้าที่ | ข้อกำหนดที่แสดง | สิ่งที่ควรสังเกตด้านภาษาภาพ |
+| หน้าจอ / บอร์ด | หน้าที่ | ข้อกำหนดที่แสดง | สิ่งที่ควรสังเกตด้านภาษาภาพ |
 | --- | --- | --- | --- |
-| 01 · Download Queue | หน้าหลัก: เพิ่มลิงก์ ดูคิว ควบคุมคิว ดูงานปัจจุบันและการ์ด | IR-017, TBA-004 (เพลงเดี่ยว/เพลย์ลิสต์/อัลบั้ม), IR-019 แบบย่อ | Bezel ลาเวนเดอร์ + Bezel ชมพู, Chip สถานะ 4 แบบ, ปุ่ม Transport, กล่องคำพูดสถานะ, ตรา 06 IN QUEUE |
-| 02 · Track Details & Output Validator | ดู Metadata 9 ฟิลด์ ที่มาของแต่ละฟิลด์ ปก และผลตรวจ | IR-005, IR-006, IR-020, TBA-008, TBA-009, TBA-010, TBA-011 | ปกขอบพิกเซลเงาม่วง, ป้ายแหล่งที่มา (yt-dlp / iTunes / MusicBrainz), หน้าต่าง Validator ภาษาพิกเซล |
-| 03 · Storage & SD Card Manager | ตรวจการ์ด พื้นที่ว่าง เลือกโฟลเดอร์ ดูโครงสร้างที่จะสร้าง แนบ cookies.txt | IR-008–IR-011, IR-018, IR-019, TBA-005 | แถบพื้นที่แบบ Segment (จาก Loading bar R3), Tree โฟลเดอร์ตัว Mono, Warning dialog สถานะการ์ดหลุด |
-| 04 · First-run Disclaimer | ข้อตกลงการใช้งานส่วนบุคคลครั้งแรก | TBA-005 | Dialog พิกเซลกลางพื้นหมากรุก, Wordmark ใช้เงาชมพูแทนเงาม่วง |
+| **01 · Main Workspace (Queue + Now Processing)** | หน้าหลัก: เพิ่มลิงก์ ดูคิว ควบคุมคิว ดูแผ่นเสียงหมุน 10 ขั้นตอนและการ์ด | IR-017, DEC-025 (4 สถานะ + 10 Stages), IR-019 แบบย่อ | Bezel ลาเวนเดอร์ + Bezel ชมพู, Chip สถานะ 4 แบบ (`Queued`, `Downloading`, `✓ Completed`, `✕ Failed`), Segmented Progress Bar, Speech Bubble มีหางสามเหลี่ยม + ไอคอนพิกเซล SVG |
+| **02 · Track Metadata & Output Validator** | ดู Metadata 9 ฟิลด์ ปก `800×800 JPEG` และผลตรวจ OutputValidator 4 ข้อ | IR-005, IR-006, IR-020, DEC-021, DEC-022 | ป้าย `covr` เปลี่ยนตามจริง (`EMBEDDED ATOM: covr` หรือ `ATOM covr: <omitted — no cover art>`), ผลตรวจ 4 ข้อแสดงตามข้อมูลจริงจาก Backend (ไม่เดา `PASS` เอง) |
+| **03 · Storage & SD Card Manager** | ตรวจการ์ด (`DRIVE_REMOVABLE`) พื้นที่ว่าง 20 ช่อง เลือกโฟลเดอร์ ดูโครงสร้างที่จะสร้าง | IR-008–IR-011, IR-018, IR-019, DEC-017, DEC-018 | แถบพื้นที่แบบ Segment 20 ช่อง, ปุ่ม `USE THIS CARD` ที่ส่งตัวระบุไดรฟ์ให้ Backend ตรวจสอบความพร้อมเขียนจริง, Tree โฟลเดอร์ตัว Mono |
+| **04 · First-Run Disclaimer Modal** | ข้อตกลงการใช้งานส่วนบุคคลเมื่อเปิดแอปครั้งแรก | DEC-004, TBA-023 | แสดงข้อความ Placeholder `[DISCLAIMER TEXT — wording to be supplied by the project owner]` พร้อม Checkbox ยืนยันและปุ่ม `QUIT` / `ACCEPT & CONTINUE` |
+| **05 · Duplicate File Conflict Prompt** | Dialog พิกเซลถามเมื่อพบไฟล์ซ้ำก่อนดาวน์โหลดเสียง: `Skip`, `Keep Both (1)`, `Overwrite` | DEC-019, DEC-036, DEC-039, DEC-040, DEC-044 | กติกา `Keep Both` ยืนยันแล้วเป็น `<Title> (1).m4a`; ตัวเลือก Scope 3 ระดับ (`This track only`, `All in this album`, `All in this queue run`); ไม่ปิดหน้าต่างทิ้งหากคำสั่งล้มเหลว |
+| **06 · Settings** | โฟลเดอร์ปลายทาง, สวิตช์ `Require album art`, `cookies.txt`, ปุ่มอัปเดต `yt-dlp`, `MusicBrainz User-Agent`, ทางเข้าหน้า About | DEC-004, DEC-022, DEC-037, DEC-038, TBA-026 | เก็บเฉพาะชื่อไฟล์คุกกี้และมีปุ่ม `REMOVE` แยกคำสั่งชัดเจน (`clear_cookies_file`) |
+| **07 · History** | รายการงานที่จบแล้วจาก `history.json` (`✓ Completed` / `✕ Failed`) พร้อมตัวกรองและปุ่ม `CLEAR HISTORY` | DEC-037, DEC-039 | งานที่ถูก `Skip` ไม่ถูกบันทึกลง History ตาม DEC-039 |
+| **08 · Error & Alert States** | แถบแจ้งเตือนเมื่อการ์ดหลุดกลางคัน (`! SD CARD ALERT`) และแจ้งเตือนระบบ (`SYSTEM NOTICE`) พร้อมปุ่ม `↻ RESUME QUEUE` / `VIEW DETAILS` | IR-019, DEC-041, DEC-042 | สถานะคิว (`queue_running`, `queue_halted`) รับจาก Backend เท่านั้น |
+| **09 · First-Run `yt-dlp.exe` Setup** | โมดัลเมื่อไม่พบ `yt-dlp.exe` ข้าง `PLADAZ.exe`: ปุ่ม `⬇ DOWNLOAD YT-DLP`, `LOCATE FILE…`, `CHECK AGAIN` | DEC-038 | ตรวจสอบ `--version` ใน Backend ก่อนคัดลอกเข้าโฟลเดอร์แอป |
+| **10 · Storage Gate Warning** | แถบแจ้งเตือนเมื่อยังไม่ได้ตั้งค่าโฟลเดอร์ปลายทางหรือการ์ดไม่พร้อมเขียน พร้อมปุ่ม `CHOOSE FOLDER…` | IR-008, IR-009 | ปิดปุ่ม `▶ START QUEUE` จนกว่าโฟลเดอร์ปลายทางจะพร้อมเขียน |
+| **11 · Cancel Active Download Confirm** | โมดัลยืนยันก่อนยกเลิกเพลงที่กำลังดาวน์โหลด | DEC-042, TC-016 | เปลี่ยนงานที่ยกเลิกเป็น `Failed (ERR_TASK_CANCELLED)` ล้างไฟล์ชั่วคราว และพักคิวรอ `Resume` |
+| **12 · Choose Tracks Picker** | *(ตัดออกตามการตัดสินใจ Phase 4)* | Phase 4 Decision 4.3 ข | เพลย์ลิสต์/อัลบั้มเพิ่มทุกเพลงเข้าคิวโดยตรง |
+| **13 · URL Fetching & Queue Feedback** | แถบสถานะขณะอ่านลิงก์ผ่าน `yt-dlp` และแสดงจำนวนเพลงที่เพิ่มเข้าคิว | DEC-003, DEC-025 | แสดงรหัสข้อผิดพลาดชัดเจนหากลิงก์ไม่ถูกต้อง |
+| **14 · 10-Stage Task Pipeline Detail** | โมดัลแสดงสถานะย่อยทั้ง 10 ขั้นตอนของงาน พร้อมปุ่ม `OPEN PROMPT` เมื่อค้างที่ `waiting_conflict` | DEC-025 | เปิดดูได้จากปุ่ม `▾` ในแถวคิวหรือปุ่ม `VIEW 10 STAGES ▾` |
+| **15 · Queue Finished Summary** | โมดัลสรุปผลเมื่อคิวรอบปัจจุบันทำงานครบ (`COMPLETED`, `FAILED`, `! NO COVER`) | IR-017, DEC-022 | นับเฉพาะงานที่อยู่ในรอบการรันปัจจุบัน (`activeRunTaskIds`) ไม่นับรวมงานเก่าที่ค้างจากรอบก่อน |
+| **16 · `yt-dlp` Module Updater** | โมดัลอัปเดต `yt-dlp.exe` แบบปลอดภัย พร้อมพักปุ่ม `Start Queue` ระหว่างอัปเดต | DEC-038, TC-031 | ดาวน์โหลดลงไฟล์ชั่วคราว ตรวจ `--version` แล้วสลับแทนที่แบบ Atomic |
+| **17 · Diagnostic Log Viewer (`pladaz.log`)** | โมดัลแสดงบรรทัดล่าสุดจาก `logs/pladaz.log` พร้อมปุ่ม `COPY DETAILS` และ `OPEN LOG FOLDER` | IR-022, DEC-032, TC-032 | ข้อมูลคุกกี้และโทเค็นถูกกรองออกก่อนแสดงผลและบันทึก |
+| **18 · Tactile Button States** | ระบบสถานะปุ่มกด (`Default`, `Hover`, `Active`, `Focus-visible`, `Disabled`) | Part B.7 | ใช้ฟอนต์ `Silkscreen` ขนาดขั้นต่ำ `12px` |
+| **19 · Responsive / Narrow Window Layout** | การปรับเลย์เอาต์เมื่อย่อหน้าต่าง (`<1024px` แสดง Mini-Player, `<640px` แสดงแท็บล่าง) | Part B.7 | รองรับทั้งหน้าจอ Desktop 1280px และหน้าต่างย่อขนาด |
+| **20 · About PLADAZ & Third-Party Notices** | โมดัลแสดงเวอร์ชันแอป, `yt-dlp`, `FFmpeg`, ปุ่มเปิดอ่าน Disclaimer ซ้ำ และลิ้นชักสัญญาอนุญาต Open Source | DEC-029 | แสดงข้อมูลตรงกับ `LICENSE-THIRD-PARTY.txt` |
 
-หน้าจอ 01 ตั้งเป็น Interactive (ลิงก์ระหว่างหน้าใช้งานได้ในโหมด Play) และมี Tweak สี Accent ให้ทดลองชมพูโทนอื่นได้
+**ข้อกำหนดเรื่องฟอนต์และ Assets ออฟไลน์ (`DEC-029`):** ฟอนต์ทั้ง 4 ชุด (`Dela Gothic One`, `Silkscreen`, `IBM Plex Sans Thai`, `IBM Plex Mono`) และ CSS ที่คอมไพล์แล้ว (`ui/app.built.css`) ถูกรวมไว้ในแพ็กเกจทั้งหมด ไม่มีการเรียก CDN ภายนอก
 
 ## Part D — Written Design Documentation
 
@@ -281,25 +297,18 @@ PLADAZ ควรรู้สึกเหมือนหยิบเครื่�
 - **ลวดลาย:** ตารางหมากรุก, ลอนหยัก, dot grid, ลายปกว่าง ทำด้วย CSS gradient ไม่ต้องใช้ไฟล์ภาพ
 - **State ที่ยังต้องออกแบบเพิ่ม:** Hover/Focus/Pressed ของปุ่มทุกชนิด (ข้อเสนอ: Pressed = เงาด้านในหาย + เลื่อนลง 2px), คิวว่าง, ไม่พบการ์ด, พื้นที่ไม่พอ, Validator ไม่ผ่าน
 
-### 19. Assumptions, Open Questions และข้อจำกัด
+### 19. สรุปข้อกำหนดที่ปิดแล้วและรายการที่รอเจ้าของโครงการ (Resolved & Remaining TBA)
 
-**สิ่งที่ Mockup เสนอเพิ่มเกินเอกสาร (ต้องยืนยัน):**
+**ข้อกำหนดที่ได้รับการยืนยันและนำไปสร้างจริงแล้ว:**
 
-- [ ] ปุ่ม Pause queue และ Remove from queue — เอกสารไม่ได้ระบุ
-- [ ] ปุ่ม QUIT ในหน้า Disclaimer — ไม่ได้ระบุว่าถ้าไม่ยอมรับจะเกิดอะไร
-- [ ] ลำดับขั้นตอน FETCH → AAC → TAG → WRITE → CHECK — อนุมานจาก IR-016/IR-020 ยังไม่ยืนยัน
-- [ ] แถบ "Reserved for current queue (est.)" ในหน้า Storage — ต้องรู้ว่าระบบประมาณขนาดไฟล์ล่วงหน้าได้หรือไม่
+- [x] ปุ่มควบคุมคิวในหน้า 01 ใช้ `▶ START QUEUE` / `■ CANCEL` / `↻ RESUME QUEUE` ตาม `DEC-042` (ไม่มีปุ่ม Pause) พร้อมปุ่ม `CLEAR HISTORY` ในหน้า 07 และปุ่มปิดแถบแจ้งเตือนในหน้า 08
+- [x] ปุ่ม `QUIT` ในหน้า Disclaimer (บอร์ด 04) สั่งปิดแอปผ่าน `BridgeAPI.quit_app()` ทันทีหากผู้ใช้ไม่ยอมรับเงื่อนไข
+- [x] ลำดับขั้นตอนย่อย 10 ขั้นตอน (`01 checking_sd` ถึง `10 copying`) ตรงกับ `SYSTEM_DESIGN.md 3.2` และ `DEC-025`
+- [x] กฎชื่อซ้ำและอักขระต้องห้าม (`DEC-018`, `DEC-019`): แทนที่อักขระต้องห้ามของ Windows ด้วย `_` และตั้งชื่อ `Keep Both` เป็น `<Title> (1).m4a`, `<Title> (2).m4a`
+- [x] ชุดฟิลด์ที่ `OutputValidator` ตรวจ (`DEC-021`, `DEC-022`): ไฟล์อ่านได้ด้วย `mutagen`, Codec เป็น `AAC-LC` (`mp4a.40.2`), มี `Title` (`©nam`), และตรวจปก `800×800 JPEG` ตามสวิตช์ `Require album art`
+- [x] พฤติกรรมของคิวหลังการ์ดถูกถอด (`DEC-041`, `DEC-042`): เธรดตรวจการ์ดทุก 2 วินาทีหยุดงานปัจจุบันเป็น `Failed (ERR_SDCARD_DISCONNECTED)` ลบไฟล์ชั่วคราว และพักคิวรอ `Resume`
 
-**รายละเอียดที่ยังเป็น TBA ใน Mockup:**
+**รายการที่ยังเป็น TBA รอข้อมูลจากเจ้าของโครงการก่อนอนุมัติ Release จริง:**
 
-- [ ] กฎชื่อซ้ำ และอักขระที่ใช้แทนอักขระต้องห้าม (IR-018)
-- [ ] ชุดฟิลด์ที่ Validator ถือว่า "ครบ" (IR-020)
-- [ ] พฤติกรรมของคิวหลังการ์ดถูกถอด (IR-019 ระบุเพียงให้แจ้งเตือน)
-- [ ] ข้อความ Disclaimer จริง
-- [ ] ภาษาของ UI (ไทย/อังกฤษ) — Mockup ใช้อังกฤษเป็นสมมติฐาน
-
-**ข้อจำกัด:**
-
-- เอกสาร Implementation Plan ที่ได้รับถูกตัดจบหลัง TBA-011 ข้อกำหนดหลังจากนั้น (ถ้ามี) ยังไม่ได้นำมาพิจารณา
-- โทนสีและหน้าตา UI ถูกระบุว่าเป็น TBA ในเอกสารโปรเจกต์ เอกสารนี้คือข้อเสนอสำหรับปิด TBA ข้อนั้น ไม่ใช่การยืนยัน
-- ค่าสี ขนาด และฟอนต์ทั้งหมดเป็น Proposed Design Token ไม่ใช่ค่าจากต้นฉบับ
+- [ ] `TBA-023`: ข้อความจริงของ Personal Use Disclaimer (ปัจจุบันแสดง Placeholder `[DISCLAIMER TEXT — wording to be supplied by the project owner]`)
+- [ ] `TBA-026`: ค่า `User-Agent` สำหรับเรียก MusicBrainz API (ตั้งค่าได้ในหน้า Settings ช่อง `5. MUSICBRAINZ USER-AGENT`)

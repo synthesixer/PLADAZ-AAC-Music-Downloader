@@ -194,6 +194,13 @@ def parse_track_info(data: dict[str, Any], entry_url: str) -> RawTrackInfo:
     release_year = _extract_year(data)
     genre = data.get("genre")
     thumbnail_url = data.get("thumbnail")
+    if not thumbnail_url:
+        thumbnails = data.get("thumbnails")
+        if isinstance(thumbnails, list) and thumbnails:
+            for thumb in reversed(thumbnails):
+                if isinstance(thumb, dict) and thumb.get("url"):
+                    thumbnail_url = thumb["url"]
+                    break
 
     audio_formats: list[AudioFormat] = []
     for fmt in data.get("formats") or []:

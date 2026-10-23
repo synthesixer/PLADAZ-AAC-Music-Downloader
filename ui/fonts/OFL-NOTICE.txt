@@ -1,0 +1,7 @@
+SIL Open Font License 1.1 (OFL-1.1)
+Bundled Fonts for Offline Use in PLADAZ:
+- Dela Gothic One (Copyright 2020 The Dela Gothic One Project Authors)
+- Silkscreen (Copyright 2022 Jason Kottke / The Silkscreen Project Authors)
+- IBM Plex Sans Thai (Copyright 2018 IBM Corp.)
+- IBM Plex Mono (Copyright 2017 IBM Corp.)
+Full license text: https://scripts.sil.org/OFL

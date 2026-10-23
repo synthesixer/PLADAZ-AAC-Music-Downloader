@@ -4,6 +4,8 @@ from pathlib import Path
 from typing import Any
 import pytest
 
+pytestmark = [pytest.mark.integration, pytest.mark.real_binaries]
+
 from pladaz.domain.enums import AudioProcessMode
 from pladaz.domain.models import AudioFormat, RawTrackInfo, TrackMetadata
 from pladaz.services.audio_processor import AudioProcessingService

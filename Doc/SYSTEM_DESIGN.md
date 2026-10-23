@@ -4,12 +4,12 @@
 >
 > **ภาษา:** ไทย  
 > **ชื่อโครงการ:** PLADAZ  
-> **เวอร์ชันเอกสาร:** 2.2 (อ้างอิง `IMPLEMENT_PLAN.md` เวอร์ชัน 2.3)  
+> **เวอร์ชันเอกสาร:** 2.3 (อ้างอิง `IMPLEMENT_PLAN.md` เวอร์ชัน 2.5)  
 > **แพลตฟอร์มเป้าหมาย:** Windows 10 / 11  
 > **อุปกรณ์เป้าหมาย:** SNOWSKY ECHO DAP (Native `.m4a`)  
 > **ขอบเขต:** สถาปัตยกรรม, Interface ระหว่างโมดูล, Data Models, Data Flow & Event, Error Handling & Logging, Traceability Matrix ส่วน UI Design แยกอ้างอิงตาม `DEC-028`
 > **หัวข้อที่คงสถานะ TBA:** `TBA-023`, `TBA-026`, `TBA-027` (ดูหัวข้อ 6)  
-> **สถานะการตรวจสอบ:** แกนระบบ Phase 2 พัฒนาและรันชุดทดสอบ `pytest` ผ่านแล้ว 34 รายการ (ดูรายละเอียดใน [`PROJECT_PROGRESS.md`](file:///e:/Doc/Code/randombullshit/PLADAZV2/Doc/PROJECT_PROGRESS.md)) ส่วนโมดูลของ Phase 3–5 และการทดสอบบนอุปกรณ์จริงยังคงสถานะ `Not Run`
+> **สถานะการตรวจสอบ:** พัฒนาครบทั้ง Phase 2 (แกนระบบ), Phase 3 (กระบวนการเพลงและคิว), และ Phase 4 (Frontend 19 บอร์ด, App Shell, และแพ็กเกจ PyInstaller `--onedir`) รันชุดทดสอบ `pytest` ผ่านแล้ว **54 รายการ** (ดูรายละเอียดใน [`PROJECT_PROGRESS.md`](file:///e:/Doc/Code/randombullshit/PLADAZV2/Doc/PROJECT_PROGRESS.md)) ส่วนการทดสอบบน Clean Windows และการทดสอบบนอุปกรณ์จริง SNOWSKY ECHO DAP รอดำเนินการใน Phase 5
 
 ---
 
@@ -108,7 +108,8 @@ PLADAZV2/
 │   └── PLADAZ UI Mockup.html
 ├── src/pladaz/
 │   ├── __init__.py              # __version__ เริ่ม 1.0.0 (DEC-026)
-│   ├── main.py                  # สร้าง Window, ผูก BridgeAPI, ล้าง Temp ค้างตอนเปิดแอป
+│   ├── paths.py                 # แยก Path ระหว่างโหมดพัฒนาและโหมด sys.frozen (--onedir) (DEC-023, DEC-038, DEC-046)
+│   ├── main.py                  # สร้าง Window (1280x820, min 380x600), ผูก BridgeAPI, ล้าง Temp ค้างตอนเปิดแอป
 │   ├── bridge/
 │   │   ├── api.py               # BridgeAPI
 │   │   ├── dto.py               # TaskDTO, SDCardDTO ฯลฯ (แปลงเป็น JSON ได้)
@@ -129,13 +130,14 @@ PLADAZV2/
 │       ├── sd_card_manager.py
 │       ├── config_store.py
 │       └── logger.py
-├── ui/                          # Web assets (index.html, app.js, app.built.css)
-├── ui_src/                      # ต้นทาง Tailwind + tailwind.config.js (build ล่วงหน้า, DEC-029)
+├── ui/                          # Web assets (index.html, js/bridge.js, js/app.js, app.built.css, fonts/*.woff2)
+├── ui_src/                      # ต้นทาง Tailwind (input.css) + tailwind.config.js (build ล่วงหน้า, DEC-029, DEC-045)
 ├── bin/ffmpeg.exe
-├── (ข้างไฟล์ .exe) yt-dlp.exe       # แยกไฟล์ เพื่ออัปเดตได้ (DEC-038)
-├── pladaz.spec                  # PyInstaller spec (DEC-018)
+├── (ข้างไฟล์ .exe) yt-dlp.exe       # แยกไฟล์ เพื่ออัปเดตได้ (DEC-038, DEC-046)
+├── pladaz.spec                  # PyInstaller spec โหมด --onedir (DEC-018, DEC-046)
 └── tests/
     ├── conftest.py
+    ├── test_phase4_bridge_and_shell.py # ทดสอบ App Shell, Portable Paths, BridgeAPI และความสมบูรณ์ของออฟไลน์ UI Bundle
     ├── unit/
     │   ├── test_folder_organizer.py     # TC-002, 003, 011, 012, 025, 027
     │   ├── test_metadata_rules.py       # TC-004, 005, 006, 007, 011, 026
@@ -496,7 +498,7 @@ classDiagram
 
 - ไฟล์ `config.json` / `history.json` ผู้ใช้คัดลอกและแก้เองได้ จึงต้องรับมือไฟล์เสีย **[Proposal]**: อ่านไม่ได้/JSON พัง → เปลี่ยนชื่อไฟล์เดิมเป็น `*.corrupt-<เวลา>` , สร้างค่าเริ่มต้นใหม่, ส่ง `system:error` (`ERR_CONFIG_CORRUPT`) และไม่ปิดแอป
 - เขียนไฟล์ด้วยวิธีเขียนชื่อชั่วคราวแล้วเปลี่ยนชื่อ เพื่อไม่ให้ไฟล์ครึ่งเดียวหากแอปล่มระหว่างเขียน **[Proposal]**
-- โครงสร้าง `config.json` ขั้นต่ำ (ชื่อคีย์ `require_album_art` เป็น Proposal):
+- โครงสร้าง `config.json` ขั้นต่ำ (ยืนยันคีย์ `require_album_art` และ `musicbrainz_user_agent` ตาม DEC-050):
 
 ```json
 {
@@ -504,7 +506,8 @@ classDiagram
   "disclaimer_accepted": false,
   "destination_path": "",
   "cookies_file_path": null,
-  "require_album_art": false
+  "require_album_art": false,
+  "musicbrainz_user_agent": ""
 }
 ```
 
@@ -516,31 +519,37 @@ classDiagram
 
 | กลุ่ม | เมธอด | พารามิเตอร์ | คืนค่า | อ้างอิง |
 |---|---|---|---|---|
-| App | `get_initial_state()` | – | `{ version, config, disclaimer_accepted, sd_status, queue: [TaskDTO] }` | DEC-023, 026, 027 |
+| App | `get_initial_state()` | – | `{ version, config, disclaimer_accepted, sd_status, removable_drives, queue: [TaskDTO], queue_running, queue_halted, ytdlp_status, system_info, startup_error }` | DEC-023, 026, 027, 050 |
 | | `accept_disclaimer()` | – | `{ success }` | DEC-027 |
-| | `update_config(partial)` | `dict` | `{ success, config }` | DEC-023, 031 |
-| | `select_cookies_file()` | – | `{ selected_path }` | DEC-027 |
-| | `update_ytdlp_module()` | – | `{ success, old_version, new_version, message }` | DEC-026 |
-| SD | `scan_storage_devices()` | – | `{ devices: [SDCardDTO] }` | IR-019 |
-| | `browse_destination_folder()` | – | `{ selected_path, sd_status }` | IR-009, TC-008 |
+| | `update_config(partial)` | `dict` | `{ success, config, sd_status }` | DEC-023, 031, 050 |
+| | `select_cookies_file()` | – | `{ success, selected_path, filename }` | DEC-027 |
+| | `check_ytdlp_status()` | – | `{ success, present, version, expected_path }` | DEC-038, 050 (บอร์ด 09) |
+| | `locate_ytdlp_file()` | – | `{ success, present, version, expected_path }` | DEC-038, 050 (บอร์ด 09) |
+| | `update_ytdlp_module()` | – | `{ success, old_version, new_version, message }` | DEC-026, 038 |
+| | `get_recent_logs(max_lines)` | `int` | `{ success, lines: [str], log_path }` | DEC-050 (บอร์ด 17) |
+| | `open_folder(target)` | `str` (`"destination"` \| `"logs"`) | `{ success, opened_path }` | DEC-050 (บอร์ด 15, 17, 20) |
+| | `quit_app()` | – | `{ success }` | DEC-050 (บอร์ด 04) |
+| SD | `scan_storage_devices()` | – | `{ success, devices: [SDCardDTO], sd_status }` | IR-019 |
+| | `browse_destination_folder()` | – | `{ success, selected_path, sd_status, config }` | IR-009, TC-008 |
 | Queue | `enqueue_urls(url_text)` | `str` | `{ success, tasks_added: [TaskDTO], error }` | IR-017, DEC-025 |
 | | `resolve_conflict(task_id, action, scope)` | `str,str,str` | `{ success }` | DEC-019, 036 |
 | | `retry_task(task_id)` | `str` | `{ success, task: TaskDTO }` | IR-017 |
 | | `remove_task(task_id)` | `str` | `{ success }` | IR-017 |
 | | `clear_completed_tasks()` | – | `{ success }` | IR-017 |
-| | `get_cover_preview(task_id)` | `str` | `{ data_url }` | Proposal (2.3) |
-| | `start_queue()` / `cancel_task(task_id)` / `resume_queue()` | ดูด้านล่างตาราง | `{ success }` | DEC-042, TC-016 |
-| History | `get_history()` | – | `{ entries: [HistoryEntryDTO] }` | DEC-023 |
+| | `get_cover_preview(task_id)` | `str` | `{ success, task_id, data_url }` | Proposal (2.3), DEC-050 |
+| | `start_queue()` / `cancel_task(task_id)` / `resume_queue()` | ดูด้านล่างตาราง | `{ success }` | DEC-042, DEC-049, TC-016 |
+| History | `get_history()` | – | `{ success, entries: [HistoryEntryDTO] }` | DEC-023 |
+| | `clear_history()` | – | `{ success, entries: [] }` | DEC-050 (บอร์ด 07) |
 
-**คำสั่งควบคุมคิว (DEC-042):** คิวไม่เริ่มเองเมื่อวางลิงก์ งานทั้งหมดอยู่ที่ `Queued` จนกว่าผู้ใช้กด Start และมีคำสั่ง Cancel กับ Resume ไม่มี Pause
+**คำสั่งควบคุมคิว (DEC-042, DEC-049):** คิวไม่เริ่มเองเมื่อวางลิงก์ งานทั้งหมดอยู่ที่ `Queued` จนกว่าผู้ใช้กด Start และมีคำสั่ง Cancel กับ Resume ไม่มี Pause
 
 | เมธอด | พารามิเตอร์ | คืนค่า | หน้าที่ |
 |---|---|---|---|
 | `start_queue()` | – | `{ success }` | เริ่ม Worker ประมวลผลงานที่ `Queued` ตามลำดับ |
-| `cancel_task(task_id)` | `str` | `{ success }` | ยกเลิกงาน (TC-016) ลบไฟล์ใน Temp แล้วตั้งสถานะ `Failed` รหัส `ERR_TASK_CANCELLED` |
-| `resume_queue()` | – | `{ success }` | เดินคิวต่อหลังถูกหยุดจากการ์ดหลุดหรือพื้นที่ไม่พอ เมื่อตรวจแล้วการ์ดพร้อม |
+| `cancel_task(task_id)` | `str` | `{ success, queue_halted }` | ยกเลิกงาน (TC-016) ลบไฟล์ใน Temp แล้วตั้งสถานะ `Failed` รหัส `ERR_TASK_CANCELLED` หากเป็นงานที่กำลัง `Downloading` จะหยุดคิวชั่วคราว (`queue_halted = True`) รอให้กด `Resume` (DEC-049) |
+| `resume_queue()` | – | `{ success }` | เดินคิวต่อหลังถูกหยุดจากการ์ดหลุด พื้นที่ไม่พอ หรือหลังกดยืนยัน Cancel งานที่กำลังดาวน์โหลด |
 
-**Cancel (DEC-042):** งานที่ถูก Cancel นับเป็น `Failed` ด้วยรหัส `ERR_TASK_CANCELLED` (ไม่เพิ่มสถานะที่ 5) หยุดการทำงานของงานนั้น ลบไฟล์ใน Temp และกด Retry ได้
+**Cancel (DEC-042, DEC-049):** งานที่ถูก Cancel นับเป็น `Failed` ด้วยรหัส `ERR_TASK_CANCELLED` (ไม่เพิ่มสถานะที่ 5) หยุดการทำงานของงานนั้น ลบไฟล์ใน Temp กด Retry ได้ และหากยกเลิกงานที่กำลังดาวน์โหลดอยู่ คิวจะหยุดรอคำสั่ง `Resume` โดยงานที่เหลือคงสถานะ `Queued`
 
 ---
 
@@ -792,8 +801,12 @@ Open Decision ทั้งหมดจากรุ่น 2.0 ปิดแล้�
 - การเขียนทับไฟล์บนการ์ดจำลองผ่าน `.pladaz-tmp` + `os.replace` และการรักษาไฟล์เดิมเมื่อการ์ดหลุดกลางคัน ทดสอบแล้ว (`TC-019`, `TC-028`)
 - การจัดการไฟล์ `config.json` / `history.json` เสียหาย และการกรองข้อมูลจาก `cookies.txt` ไม่ให้หลุดลง Log หรือ `StructuredError.details` ทดสอบแล้ว (`TC-017`, `TC-030`, `TC-032`)
 
-**สิ่งที่ยังไม่ได้ตรวจสอบ (รอ Phase 3–5):**
-- Mermaid ทั้ง 4 แผนภาพ render ผ่านโดยไม่มี syntax error แต่ยังไม่ได้ดูหน้าตาผลลัพธ์
-- โมดูลของ Phase 3 (`DownloadSourceAdapter`, `AudioProcessingService`, `DownloadQueueManager`) และ Phase 4 (`BridgeAPI`, `pywebview` UI) ยังไม่ได้พัฒนา (`TC-001`, `TC-016`, `TC-018`, `TC-024`, `TC-031`, `TC-033` สถานะ `Not Run`)
-- การทดสอบเสียบ/ถอด Micro SD Card จริงบนพอร์ตฮาร์ดแวร์ (`TC-008` ส่วนฮาร์ดแวร์จริง)
+**สิ่งที่ตรวจสอบและยืนยันแล้วใน Phase 3–4 (`pytest` 54 passed + PyInstaller `--onedir` build):**
+- กระบวนการ remux (`REMUX_AAC`) และ fallback encode (`ENCODE_AAC_LC`) ด้วย `ffmpeg.exe` จริง และผ่าน `OutputValidator` ทดสอบแล้ว (`TC-024`)
+- การทำงานของ `DownloadQueueManager` แบบ Sequential Worker, การตรวจไฟล์ซ้ำก่อนดาวน์โหลดเสียง (`TC-013`), ขอบเขต `Apply to all` ทั้ง `album` และ `queue` (`TC-033`), การกด `Cancel` งานที่กำลังดาวน์โหลดแล้วหยุดคิวรอ `Resume` (`TC-016`, `DEC-049`), และการตรวจจับการ์ดหลุดเป็นระยะ (`TC-019`) ทดสอบแล้ว
+- การแยก Path ระหว่างโหมดพัฒนาและโหมด `sys.frozen` (`--onedir`), การล้าง `temp/` ตอนเปิดแอป, การบิลด์ CSS ล่วงหน้า (`ui/app.built.css`) และฝังฟอนต์ `.woff2` ออฟไลน์โดยไม่มีลิงก์ CDN (`DEC-029`, `DEC-045`), และการสร้างแพ็กเกจ `dist/PLADAZ/PLADAZ.exe` โดยมี `yt-dlp.exe` วางแยกข้าง `.exe` (`DEC-038`, `DEC-046`) ทดสอบและรันจริงผ่านแล้ว
+
+**สิ่งที่ยังรอการทดสอบด้วยมือใน Phase 5:**
+- การทดสอบ `.exe` บนเครื่อง Windows สภาพแวดล้อมสะอาด (Clean Environment) ที่ไม่ได้ติดตั้ง Python
+- การทดสอบเสียบ/ถอด Micro SD Card จริงบนพอร์ตฮาร์ดแวร์ (`TC-008`, `TC-019` ส่วนฮาร์ดแวร์จริง)
 - ความเข้ากันได้บนเครื่องเล่น **SNOWSKY ECHO DAP** จริง: ยืนยันจากสเปกเท่านั้น ผลทดสอบจริงรอ `TC-015` ใน Phase 5 (Plan 7.4)

@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PLADAZ — Personal Music Downloader</title>
+  <link rel="stylesheet" href="./app.built.css" />
+</head>
+<body class="checker min-h-screen flex flex-col">
+  <!-- App Shell Outer Frame -->
+  <div id="app-shell" class="w-full max-w-[1440px] mx-auto my-2 px-2 sm:px-4 flex-1 flex flex-col">
+    <div class="rounded-[26px] border-[3px] border-[var(--ink)] bg-[var(--bezel)] shadow-[0_8px_0_#2B2540] overflow-hidden flex-1 flex flex-col">
+
+      <!-- TOP TITLE BAR (Shared across Boards 01, 02, 03, 06, 07, 19) -->
+      <header class="bg-[var(--header)] border-b-[3px] border-[var(--ink)] px-3 sm:px-5 py-3 flex items-center justify-between gap-3">
+        <!-- Brand Logo -->
+        <div class="flex items-center gap-3 min-w-0">
+          <button id="brand-home-btn" type="button" class="w-10 h-10 rounded-xl bg-[var(--hot)] border-[2.5px] border-[var(--ink)] shadow-[0_3px_0_#2B2540] flex items-center justify-center shrink-0 cursor-pointer" title="Return to Queue">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <circle cx="11" cy="11" r="9" fill="#2B2540" stroke="#FBFAFF" stroke-width="1.5"/>
+              <circle cx="11" cy="11" r="3.5" fill="#F25AAE" stroke="#FBFAFF" stroke-width="1.2"/>
+              <circle cx="11" cy="11" r="1.2" fill="#FBFAFF"/>
+            </svg>
+          </button>
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="dela text-white text-lg sm:text-xl tracking-wide leading-none drop-shadow-[0_2px_0_#2B2540]">PLADAZ</span>
+              <span class="sil text-xs px-2 py-0.5 rounded-full bg-[var(--note)] text-[var(--ink)] border-[1.5px] border-[var(--ink)] font-bold">ECHO DAP</span>
+            </div>
+            <p class="sil text-xs text-[#E9E2FF] truncate mt-0.5">YOUTUBE / YT MUSIC → AAC-LC (.M4A) · MICRO SD</p>
+          </div>
+        </div>
+
+        <!-- Navigation Tabs (Desktop & Tablet) -->
+        <nav class="header-desktop-nav flex items-center gap-2" aria-label="Main Navigation">
+          <button type="button" data-nav="queue" class="nav-btn pbtn hot">
+            <span>♫</span>
+            <span class="nav-tab-label">QUEUE</span>
+          </button>
+          <button type="button" data-nav="history" class="nav-btn pbtn">
+            <span>☰</span>
+            <span class="nav-tab-label">HISTORY</span>
+          </button>
+          <button type="button" data-nav="storage" class="nav-btn pbtn">
+            <span>▣</span>
+            <span class="nav-tab-label">STORAGE</span>
+          </button>
+          <button type="button" data-nav="settings" class="nav-btn pbtn">
+            <span>⚙</span>
+            <span class="nav-tab-label">SETTINGS</span>
+          </button>
+        </nav>
+
+        <!-- Right Status Pill -->
+        <div class="flex items-center gap-2.5 shrink-0">
+          <div class="header-vinyl-counter flex items-center gap-2 px-3 py-1 rounded-full bg-[#3A2790] border-2 border-[var(--ink)] text-white">
+            <span id="header-vinyl-dot" class="w-3.5 h-3.5 rounded-full bg-[var(--hot)] border border-white inline-block"></span>
+            <span id="header-queue-count" class="sil text-xs font-bold">0 IN QUEUE</span>
+          </div>
+          <button id="header-about-btn" type="button" class="ibtn" title="About PLADAZ">?</button>
+        </div>
+      </header>
+
+      <!-- Scallop decorative trim -->
+      <div class="scallop h-[12px] border-b-2 border-[var(--ink)] bg-[var(--header-sh)]"></div>
+
+      <!-- GLOBAL ALERT BANNERS (Board 08: SD Card Removed Alert & System Error Alert) -->
+      <div id="global-alerts-container" class="px-4 pt-3 space-y-2 empty:hidden"></div>
+
+      <!-- MAIN VIEW CONTAINER -->
+      <main id="main-view-container" class="p-3 sm:p-5 flex-1 flex flex-col gap-4">
+
+        <!-- ============================================================
+             VIEW 01: QUEUE & NOW PROCESSING (Boards 01, 08, 10, 13, 19)
+             ============================================================ -->
+        <section id="view-queue" class="flex-1 flex flex-col gap-4">
+          <div class="main-workspace-grid flex-1 items-start">
+
+            <!-- LEFT COLUMN: DOWNLOAD QUEUE -->
+            <div class="rounded-[22px] border-[3px] border-[var(--ink)] bg-[var(--pinkbz)] p-3.5 shadow-[0_6px_0_#2B2540] flex flex-col gap-3">
+              <!-- Bezel Header -->
+              <div class="flex items-center justify-between px-1">
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-full bg-[var(--accent)] border-2 border-[var(--ink)]"></span>
+                  <h1 class="dela text-base sm:text-lg text-[var(--ink)] tracking-wide">DOWNLOAD QUEUE</h1>
+                </div>
+                <span id="queue-sd-pill" class="sil text-xs px-2.5 py-1 rounded-full border-2 border-[var(--ink)] bg-[var(--paper)] font-bold">SD: CHECKING…</span>
+              </div>
+
+              <!-- Inner Paper Card -->
+              <div class="rounded-[16px] border-[2.5px] border-[var(--ink)] bg-[var(--paper)] p-3.5 flex flex-col gap-3">
+
+                <!-- URL Input Form (Board 01 & Board 13) -->
+                <form id="enqueue-form" class="flex flex-col gap-2" autocomplete="off">
+                  <label for="url-input" class="sil text-xs font-bold text-[var(--violet)]">PASTE YOUTUBE OR YOUTUBE MUSIC LINK (SINGLE TRACK, PLAYLIST, OR ALBUM)</label>
+                  <div class="flex gap-2">
+                    <input
+                      id="url-input"
+                      type="text"
+                      placeholder="https://music.youtube.com/watch?v=... or playlist?list=..."
+                      class="mono text-[13px] flex-1 min-w-0 px-3.5 py-2.5 rounded-xl border-[2.5px] border-[var(--ink)] bg-[var(--soft)] text-[var(--ink)] focus:outline-none focus:bg-white focus:ring-2 focus:ring-[var(--accent)]"
+                    />
+                    <button id="add-url-btn" type="submit" class="btn btn-p shrink-0">
+                      <span id="add-url-icon">+</span>
+                      <span id="add-url-label" class="add-btn-text">ADD TO QUEUE</span>
+                    </button>
+                  </div>
+                </form>
+
+                <!-- Board 13: Fetching Skeleton / Added Confirmation / Inline URL Error -->
+                <div id="fetching-feedback-area" class="hidden"></div>
+
+                <!-- Board 10: Storage Gate Warning (No SD Card / Card Full) -->
+                <div id="storage-gate-banner" class="hidden"></div>
+
+                <!-- Status Counters & Clear Completed (Strictly 4 statuses per DEC-025 / Plan 5.3) -->
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t-2 border-dashed border-[var(--line)]">
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="sil text-xs px-2.5 py-1 rounded-lg border-2 border-[var(--ink)] bg-[var(--chip)] text-[var(--violet)] font-bold">
+                      QUEUED: <strong id="count-queued">0</strong>
+                    </span>
+                    <span class="sil text-xs px-2.5 py-1 rounded-lg border-2 border-[var(--ink)] bg-[var(--hot)] text-white font-bold">
+                      DOWNLOADING: <strong id="count-downloading">0</strong>
+                    </span>
+                    <span class="sil text-xs px-2.5 py-1 rounded-lg border-2 border-[var(--ink)] bg-[var(--mint)] text-[var(--mint-ink)] font-bold">
+                      ✓ COMPLETED: <strong id="count-completed">0</strong>
+                    </span>
+                    <span class="sil text-xs px-2.5 py-1 rounded-lg border-2 border-[var(--ink)] bg-[var(--ink)] text-white font-bold">
+                      ✕ FAILED: <strong id="count-failed">0</strong>
+                    </span>
+                  </div>
+                  <button id="clear-completed-btn" type="button" class="pbtn text-xs" disabled>
+                    CLEAR COMPLETED
+                  </button>
+                </div>
+
+                <!-- Queue Tracklist Container -->
+                <div id="queue-list-container" class="min-h-[290px] max-h-[430px] overflow-y-auto pr-1 space-y-2"></div>
+
+                <!-- Queue Bottom Action Bar (START QUEUE / CANCEL / RESUME - Boards 01, 08, 11, 16) -->
+                <div class="pt-2 border-t-[2.5px] border-[var(--ink)] flex flex-wrap items-center justify-between gap-2">
+                  <div class="flex items-center gap-2">
+                    <button id="start-queue-btn" type="button" class="btn btn-p">
+                      ▶ START QUEUE
+                    </button>
+                    <button id="resume-queue-btn" type="button" class="btn btn-s hidden">
+                      ↻ RESUME QUEUE
+                    </button>
+                    <button id="cancel-active-btn" type="button" class="btn btn-d" disabled>
+                      ■ CANCEL
+                    </button>
+                  </div>
+                  <div id="queue-run-hint" class="sil text-xs text-[var(--violet-2)] font-bold">
+                    SEQUENTIAL WORKER · 1 TRACK AT A TIME
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- RIGHT COLUMN: NOW PROCESSING DECK + MICRO SD WIDGET (Board 01) -->
+            <div class="desktop-now-processing-col flex flex-col gap-4">
+
+              <!-- NOW PROCESSING TURNTABLE DECK -->
+              <div class="rounded-[22px] border-[3px] border-[var(--ink)] bg-[var(--paper)] p-4 shadow-[0_6px_0_#2B2540] flex flex-col gap-3">
+                <div class="flex items-center justify-between border-b-2 border-[var(--ink)] pb-2">
+                  <div class="flex items-center gap-2">
+                    <span id="deck-live-dot" class="w-2.5 h-2.5 rounded-full bg-[var(--line)] border border-[var(--ink)]"></span>
+                    <h2 class="dela text-sm text-[var(--ink)]">NOW PROCESSING</h2>
+                  </div>
+                  <span id="deck-stage-counter" class="sil text-xs px-2 py-0.5 rounded bg-[var(--chip)] text-[var(--violet)] border border-[var(--ink)] font-bold">IDLE · 00/10</span>
+                </div>
+
+                <!-- Turntable Platter + Cover Art + Track Info -->
+                <div class="rounded-2xl border-[2.5px] border-[var(--ink)] bg-[var(--soft)] p-3 flex items-center gap-3.5 dotgrid">
+                  <!-- Vinyl Platter + Cover -->
+                  <div class="relative w-20 h-20 shrink-0 flex items-center justify-center">
+                    <div id="turntable-disc" class="w-20 h-20 rounded-full border-[3px] border-[var(--ink)] bg-[#2B2540] flex items-center justify-center shadow-md spin spin-paused">
+                      <div class="w-16 h-16 rounded-full border border-[#5E4E9E] flex items-center justify-center">
+                        <div id="deck-cover-box" class="w-11 h-11 rounded-full overflow-hidden border-2 border-[#FBFAFF] cover flex items-center justify-center">
+                          <img id="deck-cover-img" src="" alt="Cover Art" class="w-full h-full object-cover hidden" />
+                          <span id="deck-cover-fallback" class="sil text-xs text-white font-bold">M4A</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Active Track Metadata Summary -->
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-1.5">
+                      <span id="deck-status-badge" class="sil text-xs px-2 py-0.5 rounded border border-[var(--ink)] bg-[var(--chip)] text-[var(--violet)] font-bold">STANDBY</span>
+                      <div id="deck-eq" class="hidden items-end gap-0.5 h-3.5">
+                        <span class="w-1 h-3 bg-[var(--accent)] eqbar"></span>
+                        <span class="w-1 h-3.5 bg-[var(--hot)] eqbar" style="animation-delay:0.2s"></span>
+                        <span class="w-1 h-2.5 bg-[var(--violet)] eqbar" style="animation-delay:0.4s"></span>
+                      </div>
+                    </div>
+                    <h3 id="deck-track-title" class="font-bold text-sm text-[var(--ink)] truncate mt-1">Waiting for queue start…</h3>
+                    <p id="deck-track-artist" class="text-xs text-[var(--violet-2)] truncate">Select tracks and press Start Queue</p>
+                    <p id="deck-track-album" class="mono text-xs text-[var(--violet)] truncate mt-0.5">—</p>
+                  </div>
+                </div>
+
+                <!-- Segmented Progress Bar (Design Direction B.7 & D.14) -->
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <span id="deck-stage-label" class="sil text-xs font-bold text-[var(--violet)]">STAGE: —</span>
+                    <span id="deck-progress-pct" class="mono text-xs font-bold text-[var(--ink)]">0%</span>
+                  </div>
+                  <div id="deck-progress-segments" class="grid grid-cols-10 gap-1 p-1 rounded-lg border-2 border-[var(--ink)] bg-[var(--paper)]"></div>
+                  <div class="flex items-center justify-between mt-1">
+                    <span id="deck-speed-eta" class="mono text-xs text-[var(--violet-2)]">Speed: — · ETA: —</span>
+                    <button id="deck-open-stages-btn" type="button" class="sil text-xs text-[var(--accent)] underline font-bold hidden">VIEW 10 STAGES ▾</button>
+                  </div>
+                </div>
+
+                <!-- 10-Stage Pipeline Grid (DEC-025) -->
+                <div id="deck-stage-grid" class="grid grid-cols-5 gap-1.5 pt-1"></div>
+
+                <!-- Pixel Companion & Speech Bubble with Triangle Tail (Design Direction B.7) -->
+                <div class="rounded-xl border-2 border-[var(--ink)] bg-[var(--note)] px-3 py-2.5 flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-lg bg-[var(--hot)] border-2 border-[var(--ink)] flex items-center justify-center shrink-0 shadow-[0_2px_0_#2B2540]" aria-hidden="true">
+                    <svg width="20" height="20" viewBox="0 0 16 16" shape-rendering="crispEdges">
+                      <rect x="6" y="2" width="7" height="2" fill="#FBFAFF"/>
+                      <rect x="6" y="4" width="2" height="7" fill="#FBFAFF"/>
+                      <rect x="11" y="4" width="2" height="6" fill="#FBFAFF"/>
+                      <rect x="3" y="9" width="5" height="4" fill="#FBFAFF"/>
+                      <rect x="8" y="8" width="5" height="4" fill="#FBFAFF"/>
+                      <rect x="4" y="10" width="2" height="2" fill="#2B2540"/>
+                      <rect x="9" y="9" width="2" height="2" fill="#2B2540"/>
+                    </svg>
+                  </div>
+                  <div class="speech-bubble px-3 py-2 flex-1 min-w-0">
+                    <p id="mascot-speech" class="text-xs font-medium text-[var(--ink)] leading-snug">
+                      STANDBY · 00/10 — Select tracks and press Start Queue
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- MICRO SD PIXEL WINDOW WIDGET -->
+              <div class="rounded-[20px] border-[3px] border-[var(--ink)] bg-[var(--paper)] overflow-hidden shadow-[0_5px_0_#2B2540]">
+                <div class="bg-[var(--header)] border-b-2 border-[var(--ink)] px-3.5 py-2 flex items-center justify-between text-white">
+                  <span class="sil text-xs font-bold">▣ MICRO SD CARD STATUS</span>
+                  <div class="flex items-center gap-1.5">
+                    <button id="widget-scan-sd-btn" type="button" class="pbtn text-xs py-0.5 px-2">SCAN</button>
+                    <button id="widget-open-storage-btn" type="button" class="pbtn lav text-xs py-0.5 px-2">STORAGE ›</button>
+                  </div>
+                </div>
+                <div class="p-3.5 space-y-2.5">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <div id="widget-sd-title" class="font-bold text-xs text-[var(--ink)]">No destination selected</div>
+                      <div id="widget-sd-path" class="mono text-xs text-[var(--violet-2)] truncate max-w-[260px]">Choose a folder on your Micro SD card</div>
+                    </div>
+                    <span id="widget-sd-badge" class="sil text-xs px-2 py-0.5 rounded border border-[var(--ink)] bg-[var(--warn)] text-[var(--warn-ink)] font-bold">UNSET</span>
+                  </div>
+                  <div id="widget-sd-segments" class="grid grid-cols-10 gap-1"></div>
+                  <div class="flex items-center justify-between mono text-xs text-[var(--violet)]">
+                    <span id="widget-sd-free">Free: —</span>
+                    <span id="widget-sd-total">Total: —</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Tablet/Mobile Mini-Player Bar (Board 19: shown <1024px) -->
+          <div id="mobile-mini-player" class="mobile-mini-player rounded-2xl border-[2.5px] border-[var(--ink)] bg-[var(--paper)] p-3 items-center justify-between gap-3 shadow-[0_4px_0_#2B2540]">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-9 h-9 rounded-full bg-[#2B2540] border-2 border-[var(--ink)] flex items-center justify-center text-white sil text-xs shrink-0">♫</div>
+              <div class="min-w-0">
+                <div id="mini-player-title" class="font-bold text-xs text-[var(--ink)] truncate">Turntable Standby</div>
+                <div id="mini-player-stage" class="sil text-xs text-[var(--violet)]">STAGE: IDLE</div>
+              </div>
+            </div>
+            <div class="mono text-xs font-bold text-[var(--accent)]" id="mini-player-pct">0%</div>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             VIEW 02: TRACK METADATA & OUTPUT VALIDATOR (Board 02)
+             ============================================================ -->
+        <section id="view-track" class="hidden flex-1 flex flex-col gap-4">
+          <div class="rounded-[22px] border-[3px] border-[var(--ink)] bg-[var(--pinkbz)] p-4 shadow-[0_6px_0_#2B2540] flex flex-col gap-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <button id="track-back-btn" type="button" class="pbtn">← QUEUE</button>
+                <h1 class="dela text-base sm:text-lg text-[var(--ink)]">TRACK DETAILS &amp; METADATA (9 FIELDS)</h1>
+              </div>
+              <div id="track-detail-badges" class="flex items-center gap-2"></div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+              <!-- Left 4 cols: 1:1 Cover Art + Output Path Preview -->
+              <div class="lg:col-span-4 rounded-2xl border-[2.5px] border-[var(--ink)] bg-[var(--paper)] p-4 flex flex-col gap-3">
+                <div class="aspect-square w-full max-w-[240px] mx-auto rounded-2xl border-[2.5px] border-[var(--ink)] overflow-hidden cover flex items-center justify-center relative shadow-[0_4px_0_#2B2540]">
+                  <img id="track-view-cover-img" src="" alt="Track Cover" class="w-full h-full object-cover hidden" />
+                  <div id="track-view-cover-empty" class="text-center p-4 text-white">
+                    <div class="dela text-lg">NO COVER</div>
+                    <p class="sil text-xs mt-1">800 × 800 · JPEG · 1:1</p>
+                  </div>
+                </div>
+                <div class="text-center">
+                  <span id="track-view-covr-pill" class="sil text-xs px-2.5 py-1 rounded-full border border-[var(--ink)] bg-[var(--chip)] text-[var(--violet)] font-bold">
+                    EMBEDDED ATOM: covr (800×800 JPEG)
+                  </span>
+                </div>
+
+                <div class="rounded-xl border-2 border-[var(--ink)] bg-[var(--soft)] p-3 space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="sil text-xs font-bold text-[var(--violet)]">TARGET OUTPUT PATH</span>
+                    <span id="track-view-path-len" class="mono text-xs font-bold text-[var(--mint-ink)]">0 / 259 chars</span>
+                  </div>
+                  <p id="track-view-path" class="mono text-xs text-[var(--ink)] break-all selectable">—</p>
+                </div>
+              </div>
+
+              <!-- Right 8 cols: 9 M4A Metadata Atoms Table + Output Validator 4 Checks -->
+              <div class="lg:col-span-8 flex flex-col gap-4">
+                <div class="rounded-2xl border-[2.5px] border-[var(--ink)] bg-[var(--paper)] p-4">
+                  <div class="flex items-center justify-between mb-3">
+                    <h2 class="dela text-sm text-[var(--ink)]">MUTAGEN MP4 ATOMS · 9 FIELDS</h2>
+                    <span class="sil text-xs text-[var(--violet-2)]">EMPTY FIELDS STAY BLANK (NEVER FAKE TAGS)</span>
+                  </div>
+                  <div id="track-metadata-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
+                </div>
+
+                <!-- OutputValidator 4 Checks -->
+                <div class="rounded-2xl border-[2.5px] border-[var(--ink)] bg-[var(--paper)] overflow-hidden">
+                  <div class="bg-[var(--header)] border-b-2 border-[var(--ink)] px-4 py-2 flex items-center justify-between text-white">
+                    <span class="sil text-xs font-bold">✓ OUTPUT VALIDATOR (PRE-COPY GATE)</span>
+                    <span id="track-validator-summary" class="sil text-xs px-2 py-0.5 rounded bg-[#3A2790] border border-white">PENDING</span>
+                  </div>
+                  <div id="track-validator-checks" class="p-3.5 grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             VIEW 03: SD CARD MANAGER (Board 03)
+             ============================================================ -->
+        <section id="view-storage" class="hidden flex-1 flex flex-col gap-4">
+          <div class="rounded-[22px] border-[3px] border-[var(--ink)] bg-[var(--pinkbz)] p-4 shadow-[0_6px_0_#2B2540] flex flex-col gap-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-[var(--accent)] border-2 border-[var(--ink)]"></span>
+                <h1 class="dela text-base sm:text-lg text-[var(--ink)]">SD CARD MANAGER · SNOWSKY ECHO STORAGE</h1>
+              </div>
+              <button id="storage-scan-btn" type="button" class="btn btn-s py-1.5 px-3 text-xs">
+                ↻ SCAN REMOVABLE DRIVES
+              </button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+              <!-- Left 7 cols: Drive Selection + Capacity Bar + Destination Folder -->
+              <div class="lg:col-span-7 rounded-2xl border-[2.5px] border-[var(--ink)] bg-[var(--paper)] p-4 flex flex-col gap-4">
+                <div>
+                  <h2 class="sil text-xs font-bold text-[var(--violet)] mb-2">DETECTED REMOVABLE DRIVES (WIN32 DRIVE_REMOVABLE)</h2>
+                  <div id="storage-drives-list" class="space-y-2"></div>
+                </div>
+
+                <div class="rounded-xl border-2 border-[var(--ink)] bg-[var(--soft)] p-3.5 space-y-2">
+                  <div class="flex items-center justify-between">
+                    <span class="sil text-xs font-bold text-[var(--ink)]">DESTINATION CAPACITY BAR</span>
+                    <span id="storage-cap-label" class="mono text-xs font-bold text-[var(--violet)]">—</span>
+                  </div>
+                  <div id="storage-20-segments" class="grid grid-cols-20 gap-1" style="grid-template-columns: repeat(20, minmax(0, 1fr));"></div>
+                </div>
+
+                <div class="rounded-xl border-2 border-[var(--ink)] bg-[var(--paper)] p-3.5 space-y-2">
+                  <label class="sil text-xs font-bold text-[var(--violet)]">DESTINATION FOLDER ON MICRO SD CARD</label>
+                  <div class="flex flex-wrap sm:flex-nowrap items-center gap-2">
+                    <div id="storage-dest-path-box" class="mono text-xs flex-1 min-w-0 px-3 py-2.5 rounded-xl border-2 border-[var(--ink)] bg-[var(--soft)] truncate selectable">
+                      Not configured
+                    </div>
+                    <button id="storage-choose-folder-btn" type="button" class="btn btn-p shrink-0">
+                      CHOOSE FOLDER…
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right 5 cols: SmartFolderOrganizer Preview + Copy & Verify Rules -->
+              <div class="lg:col-span-5 flex flex-col gap-4">
+                <div class="rounded-2xl border-[2.5px] border-[var(--ink)] bg-[var(--paper)] p-4 space-y-3">
+                  <h2 class="dela text-sm text-[var(--ink)]">SMART FOLDER ORGANIZER · PREVIEW</h2>
+                  <div class="rounded-xl border-2 border-[var(--ink)] bg-[#2B2540] text-[#FBFAFF] p-3 mono text-xs space-y-1">
+                    <div class="text-[#9FD4F7]">📁 <span id="organizer-preview-root">E:\Music</span>\</div>
+                    <div class="pl-4 text-[#F9C6E4]">└── 📁 &lt;Album Artist&gt;\</div>
+                    <div class="pl-8 text-[#BFF0D4]">└── 📁 &lt;Album&gt;\</div>
+                    <div class="pl-12 text-[#FFF6B8]">└── ♪ 01 - &lt;Title&gt;.m4a</div>
+                  </div>
+                  <ul class="text-xs text-[var(--ink)] space-y-1.5 list-disc pl-4">
+                    <li><strong>Missing Album Artist:</strong> Folder falls back to Track Artist, then <code class="mono bg-[var(--chip)] px-1 rounded">Unknown Artist</code> (metadata tag stays blank).</li>
+                    <li><strong>Missing Album:</strong> Folder uses <code class="mono bg-[var(--chip)] px-1 rounded">Unknown Album</code> (metadata tag stays blank).</li>
+                    <li><strong>Windows Sanitizer:</strong> Replaces <code class="mono bg-[var(--chip)] px-1 rounded">&lt; &gt; : " / \ | ? *</code> and trailing dots/spaces with <code class="mono bg-[var(--chip)] px-1 rounded">_</code>.</li>
+                    <li><strong>Safe Staged Overwrite:</strong> Writes to <code class="mono bg-[var(--chip)] px-1 rounded">.pladaz-tmp</code> + <code class="mono">os.fsync()</code> + mutagen check before atomic replace.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             VIEW 06: SETTINGS (Board 06)
+             ============================================================ -->
+        <section id="view-settings" class="hidden flex-1 flex flex-col gap-4">
+          <div class="rounded-[22px] border-[3px] border-[var(--ink)] bg-[var(--pinkbz)] p-4 shadow-[0_6px_0_#2B2540] flex flex-col gap-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-[var(--accent)] border-2 border-[var(--ink)]"></span>
+                <h1 class="dela text-base sm:text-lg text-[var(--ink)]">SETTINGS · PORTABLE CONFIG.JSON</h1>
+              </div>
+              <span class="sil text-xs px-2.5 py-1 rounded-full bg-[var(--paper)] border-2 border-[var(--ink)] font-bold">SCHEMA V1</span>
+            </div>
+
+            <div class="rounded-2xl border-[2.5px] border-[var(--ink)] bg-[var(--paper)] p-4 space-y-4">
+              <!-- 1. Destination Folder -->
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b-2 border-[var(--line)]">
+                <div>
+                  <div class="sil text-xs font-bold text-[var(--ink)]">1. DESTINATION FOLDER (MICRO SD)</div>
+                  <p class="text-xs text-[var(--violet-2)]">Root folder where Artist / Album / Track.m4a folders are organized.</p>
+                </div>
+                <div class="flex items-center gap-2 sm:w-[420px]">
+                  <input id="settings-dest-input" type="text" readonly class="mono text-xs flex-1 px-3 py-2 rounded-xl border-2 border-[var(--ink)] bg-[var(--soft)]" placeholder="No folder selected" />
+                  <button id="settings-browse-dest-btn" type="button" class="btn btn-s py-2 px-3">BROWSE…</button>
+                </div>
+              </div>
+
+              <!-- 2. Require Album Art Switch -->
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b-2 border-[var(--line)]">
+                <div>
+                  <div class="sil text-xs font-bold text-[var(--ink)]">2. REQUIRE ALBUM ART (OUTPUT VALIDATOR)</div>
+                  <p class="text-xs text-[var(--violet-2)]">When OFF (default), tracks without cover art pass with a <code class="mono bg-[var(--warn)] px-1 rounded">! NO COVER</code> warning badge. When ON, missing cover fails the task.</p>
+                </div>
+                <label class="inline-flex items-center gap-2.5 cursor-pointer select-none">
+                  <input id="settings-require-cover-checkbox" type="checkbox" class="w-5 h-5 accent-[var(--hot)] rounded border-2 border-[var(--ink)]" />
+                  <span id="settings-require-cover-label" class="sil text-xs font-bold text-[var(--ink)]">OFF (WARN ONLY)</span>
+                </label>
+              </div>
+
+              <!-- 3. Cookies.txt (Optional) -->
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b-2 border-[var(--line)]">
+                <div>
+                  <div class="sil text-xs font-bold text-[var(--ink)]">3. COOKIES.TXT · OPTIONAL (NETSCAPE FORMAT)</div>
+                  <p class="text-xs text-[var(--violet-2)]">Used for age-restricted or member-only tracks. Cookie contents are never displayed or written to logs.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span id="settings-cookies-filename" class="mono text-xs px-3 py-1.5 rounded-xl border-2 border-[var(--ink)] bg-[var(--soft)]">Not selected</span>
+                  <button id="settings-choose-cookies-btn" type="button" class="pbtn">CHOOSE…</button>
+                  <button id="settings-remove-cookies-btn" type="button" class="pbtn text-[var(--err-ink)]">REMOVE</button>
+                </div>
+              </div>
+
+              <!-- 4. yt-dlp Standalone Module -->
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b-2 border-[var(--line)]">
+                <div>
+                  <div class="sil text-xs font-bold text-[var(--ink)]">4. YT-DLP MODULE (STANDALONE YT-DLP.EXE)</div>
+                  <p class="text-xs text-[var(--violet-2)]">External binary alongside PLADAZ.exe — updateable without rebuilding the app.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span id="settings-ytdlp-version" class="mono text-xs px-3 py-1.5 rounded-xl border-2 border-[var(--ink)] bg-[var(--chip)] font-bold">Checking…</span>
+                  <button id="settings-open-updater-btn" type="button" class="btn btn-p py-2 px-3">UPDATE YT-DLP</button>
+                </div>
+              </div>
+
+              <!-- 5. MusicBrainz User-Agent -->
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b-2 border-[var(--line)]">
+                <div>
+                  <div class="sil text-xs font-bold text-[var(--ink)]">5. MUSICBRAINZ USER-AGENT (OPTIONAL)</div>
+                  <p class="text-xs text-[var(--violet-2)]">Custom User-Agent header for MusicBrainz fallback lookup (1 req/sec rate limit).</p>
+                </div>
+                <div class="sm:w-[420px]">
+                  <input id="settings-mb-ua-input" type="text" placeholder="AppName/1.0 (contact@example.com)" class="mono text-xs w-full px-3 py-2 rounded-xl border-2 border-[var(--ink)] bg-[var(--soft)]" />
+                </div>
+              </div>
+
+              <!-- 6. About PLADAZ -->
+              <div class="flex items-center justify-between pt-1">
+                <div>
+                  <div class="sil text-xs font-bold text-[var(--ink)]">6. ABOUT PLADAZ &amp; LICENSES</div>
+                  <p class="text-xs text-[var(--violet-2)]">Version info, Personal Use Disclaimer, Third-Party Notices, and Log folder.</p>
+                </div>
+                <button id="settings-open-about-btn" type="button" class="pbtn lav">ABOUT ›</button>
+              </div>
+
+              <!-- Footer Save / Discard -->
+              <div class="pt-3 border-t-[2.5px] border-[var(--ink)] flex items-center justify-between">
+                <span id="settings-save-status" class="sil text-xs text-[var(--violet-2)] font-bold">SAVED TO PORTABLE CONFIG.JSON</span>
+                <div class="flex items-center gap-2">
+                  <button id="settings-discard-btn" type="button" class="btn btn-s">DISCARD</button>
+                  <button id="settings-save-btn" type="button" class="btn btn-p">SAVE SETTINGS</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             VIEW 07: HISTORY (Board 07)
+             ============================================================ -->
+        <section id="view-history" class="hidden flex-1 flex flex-col gap-4">
+          <div class="rounded-[22px] border-[3px] border-[var(--ink)] bg-[var(--pinkbz)] p-4 shadow-[0_6px_0_#2B2540] flex flex-col gap-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-[var(--accent)] border-2 border-[var(--ink)]"></span>
+                <h1 class="dela text-base sm:text-lg text-[var(--ink)]">DOWNLOAD HISTORY (HISTORY.JSON)</h1>
+                <span id="history-count-badge" class="sil text-xs px-2.5 py-0.5 rounded-full bg-[var(--paper)] border-2 border-[var(--ink)] font-bold">0 RECORDS</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="flex items-center gap-1">
+                  <button type="button" data-hist-filter="all" class="hist-filter-btn pbtn hot text-xs">ALL</button>
+                  <button type="button" data-hist-filter="Completed" class="hist-filter-btn pbtn text-xs">COMPLETED</button>
+                  <button type="button" data-hist-filter="Failed" class="hist-filter-btn pbtn text-xs">FAILED</button>
+                </div>
+                <button id="history-clear-btn" type="button" class="btn btn-d py-1.5 px-3 text-xs">CLEAR HISTORY</button>
+              </div>
+            </div>
+
+            <div class="rounded-2xl border-[2.5px] border-[var(--ink)] bg-[var(--paper)] p-3.5">
+              <div id="history-list-container" class="min-h-[320px] max-h-[500px] overflow-y-auto space-y-2"></div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+
+      <!-- Mobile Bottom Navigation Bar (<640px, Board 19) -->
+      <nav class="mobile-bottom-tabs border-t-[3px] border-[var(--ink)] bg-[var(--header)] p-2 gap-1.5" aria-label="Mobile Navigation">
+        <button type="button" data-nav="queue" class="nav-btn pbtn hot justify-center">♫ QUEUE</button>
+        <button type="button" data-nav="history" class="nav-btn pbtn justify-center">☰ HIST</button>
+        <button type="button" data-nav="storage" class="nav-btn pbtn justify-center">▣ CARD</button>
+        <button type="button" data-nav="settings" class="nav-btn pbtn justify-center">⚙ SET</button>
+      </nav>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL OVERLAYS (Boards 04, 05, 09, 11, 14, 15, 16, 17, 20)
+       ========================================================================= -->
+
+  <!-- BOARD 04: FIRST-LAUNCH PERSONAL USE DISCLAIMER MODAL -->
+  <div id="modal-disclaimer" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="disclaimer-title">
+    <div class="w-full max-w-[580px] rounded-[24px] border-[3px] border-[var(--ink)] bg-[var(--pinkbz)] p-4 shadow-[0_8px_0_#2B2540]">
+      <div class="flex items-center justify-between mb-2">
+        <span class="sil text-xs px-2.5 py-1 rounded-full bg-[var(--warn)] text-[var(--warn-ink)] border-2 border-[var(--ink)] font-bold">PERSONAL USE NOTICE</span>
+        <span id="disclaimer-step-pill" class="sil text-xs text-[var(--ink)] font-bold">FIRST LAUNCH · STEP 1 OF 2</span>
+      </div>
+      <div class="rounded-2xl border-[2.5px] border-[var(--ink)] bg-[var(--paper)] p-5 space-y-4">
+        <h2 id="disclaimer-title" class="dela text-lg text-[var(--ink)]">PERSONAL USE DISCLAIMER</h2>
+        <div class="rounded-xl border-2 border-[var(--ink)] bg-[var(--soft)] p-4 text-xs text-[var(--ink)] space-y-2 leading-relaxed max-h-[220px] overflow-y-auto selectable">
+          <p class="mono font-bold text-[var(--violet)]">[DISCLAIMER TEXT — wording to be supplied by the project owner]</p>
+          <p>This software is intended strictly for personal, non-commercial archival and playback on your personal digital audio player (SNOWSKY ECHO DAP). Users are responsible for complying with applicable terms of service and copyright laws in their jurisdiction.</p>
+        </div>
+        <label id="disclaimer-checkbox-row" class="flex items-center gap-2.5 cursor-pointer select-none pt-1">
+          <input id="disclaimer-accept-checkbox" type="checkbox" class="w-5 h-5 accent-[var(--hot)] rounded border-2 border-[var(--ink)]" />
+          <span class="text-xs font-bold text-[var(--ink)]">I have read and accept these terms — for personal use only.</span>
+        </label>
+        <div class="flex items-center justify-end gap-2.5 pt-2 border-t-2 border-[var(--line)]">
+          <button id="disclaimer-quit-btn" type="button" class="btn btn-d">QUIT</button>
+          <button id="disclaimer-close-readonly-btn" type="button" class="btn btn-s hidden">CLOSE</button>
+          <button id="disclaimer-accept-btn" type="button" class="btn btn-p" disabled>ACCEPT &amp; CONTINUE</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOARD 09: YT-DLP NOT FOUND SETUP MODAL -->
+  <div id="modal-ytdlp-setup" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="setup-title">
+    <div class="w-full max-w-[600px] rounded-[24px] border-[3px] border-[var(--ink)] bg-[var(--pinkbz)] p-4 shadow-[0_8px_0_#2B2540]">
+      <div class="flex items-center justify-between mb-2">
+        <span class="sil text-xs px-2.5 py-1 rounded-full bg-[var(--err)] text-[var(--err-ink)] border-2 border-[var(--ink)] font-bold">EXTERNAL MODULE CHECK</span>
+        <span class="sil text-xs text-[var(--ink)] font-bold">STEP 2 OF 2</span>
+      </div>
+      <div class="rounded-2xl border-[2.5px] border-[var(--ink)] bg-[var(--paper)] p-5 space-y-4">
+        <h2 id="setup-title" class="dela text-lg text-[var(--ink)]">YT-DLP.EXE NOT FOUND</h2>
+        <p class="text-xs text-[var(--ink)]">
+          PLADAZ uses standalone <code class="mono bg-[var(--chip)] px-1.5 py-0.5 rounded">yt-dlp.exe</code> placed next to <code class="mono bg-[var(--chip)] px-1.5 py-0.5 rounded">PLADAZ.exe</code> so you can update the extractor anytime without reinstalling the app.
+        </p>
+        <div class="rounded-xl border-2 border-[var(--ink)] bg-[var(--soft)] p-3 space-y-1">
+          <div class="sil text-xs text-[var(--violet)] font-bold">EXPECTED LOCATION</div>
+          <div id="setup-expected-path" class="mono text-xs text-[var(--ink)] break-all selectable">[app folder]\yt-dlp.exe</div>
+        </div>
+        <div id="setup-status-box" class="rounded-xl border-2 border-[var(--ink)] bg-[var(--warn)] text-[var(--warn-ink)] p-3 text-xs font-medium">
+          Click <strong>DOWNLOAD YT-DLP</strong> to fetch the official release from GitHub, or <strong>LOCATE FILE…</strong> if you already downloaded <code class="mono">yt-dlp.exe</code>.
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t-2 border-[var(--line)]">
+          <div class="flex items-center gap-2">
+            <button id="setup-download-btn" type="button" class="btn btn-p">⬇ DOWNLOAD YT-DLP</button>
+            <button id="setup-locate-btn" type="button" class="btn btn-s">LOCATE FILE…</button>
+            <button id="setup-recheck-btn" type="button" class="pbtn">CHECK AGAIN</button>
+          </div>
+          <button id="setup-open-app-btn" type="button" class="btn btn-p hidden">OPEN PLADAZ ›</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOARD 05: DUPLICATE FILE CONFLICT PROMPT MODAL (Non-dismissible by Esc per DEC-019) -->
+  <div id="modal-conflict" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="conflict-title">
+    <div class="w-full max-w-[600px] rounded-[24px] border-[3px] border-[var(--ink)] bg-[var(--pinkbz)] p-4 shadow-[0_8px_0_#2B2540]">
+      <div class="flex items-center justify-between mb-2">
+        <span class="sil text-xs px-2.5 py-1 rounded-full bg-[var(--warn)] text-[var(--warn-ink)] border-2 border-[var(--ink)] font-bold">DUPLICATE DETECTED · STAGE 05/10</span>
+        <span class="sil text-xs text-[var(--ink)] font-bold">BEFORE AUDIO DOWNLOAD</span>
+      </div>
+      <div class="rounded-2xl border-[2.5px] border-[var(--ink)] bg-[var(--paper)] p-5 space-y-4">
+        <div class="flex items-center justify-between gap-3">
+          <h2 id="conflict-title" class="dela text-lg text-[var(--ink)]">FILE ALREADY EXISTS ON CARD</h2>
+          <span class="sil text-xs px-2.5 py-1 rounded-lg bg-[var(--note)] border border-[var(--ink)] font-bold">"Same song is already on the card!"</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="rounded-xl border-2 border-[var(--ink)] bg-[var(--soft)] p-3 space-y-1">
+            <div class="sil text-xs text-[var(--violet)] font-bold">ON CARD NOW</div>
+            <div id="conflict-existing-path" class="mono text-xs text-[var(--ink)] break-all selectable">—</div>
+          </div>
+          <div class="rounded-xl border-2 border-[var(--ink)] bg-[var(--chip)] p-3 space-y-1">
+            <div class="sil text-xs text-[var(--violet)] font-bold">NEW DOWNLOAD</div>
+            <div id="conflict-new-title" class="font-bold text-xs text-[var(--ink)]">—</div>
+            <div id="conflict-new-meta" class="text-xs text-[var(--violet-2)]">—</div>
+          </div>
+        </div>
+
+        <!-- Apply-to-all Scope Radio Options (DEC-044) -->
+        <div class="rounded-xl border-2 border-[var(--ink)] bg-[var(--soft)] p-3 space-y-2">
+          <div class="sil text-xs font-bold text-[var(--violet)]">APPLY THIS CHOICE TO:</div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <label class="flex items-center gap-2 p-2 rounded-lg border border-[var(--ink)] bg-[var(--paper)] cursor-pointer text-xs font-bold">
+              <input type="radio" name="conflict-scope" value="single" checked class="accent-[var(--hot)]" />
+              <span>This track only</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 rounded-lg border border-[var(--ink)] bg-[var(--paper)] cursor-pointer text-xs font-bold">
+              <input type="radio" name="conflict-scope" value="album" class="accent-[var(--hot)]" />
+              <span>All in this album</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 rounded-lg border border-[var(--ink)] bg-[var(--paper)] cursor-pointer text-xs font-bold">
+              <input type="radio" name="conflict-scope" value="queue" class="accent-[var(--hot)]" />
+              <span>All in this queue run</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-end gap-2.5 pt-2 border-t-2 border-[var(--line)]">
+          <button id="conflict-skip-btn" type="button" class="btn btn-s">SKIP (REMOVE FROM QUEUE)</button>
+          <button id="conflict-keep-both-btn" type="button" class="btn btn-s">KEEP BOTH (1)</button>
+          <button id="conflict-overwrite-btn" type="button" class="btn btn-p">OVERWRITE</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOARD 11: CANCEL ACTIVE DOWNLOAD CONFIRMATION MODAL -->
+  <div id="modal-cancel-confirm" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="cancel-confirm-title">
+    <div class="w-full max-w-[480px] rounded-[24px] border-[3px] border-[var(--ink)] bg-[var(--pinkbz)] p-4 shadow-[0_8px_0_#2B2540]">
+      <div class="rounded-2xl border-[2.5px] border-[var(--ink)] bg-[var(--paper)] p-5 space-y-4">
+        <div class="flex items-center gap-2">
+          <span class="sil text-xs px-2.5 py-1 rounded-full bg-[var(--err)] text-[var(--err-ink)] border-2 border-[var(--ink)] font-bold">WARNING — ARE YOU SURE?</span>
+        </div>
+        <h2 id="cancel-confirm-title" class="dela text-lg text-[var(--ink)]">CANCEL ACTIVE DOWNLOAD?</h2>
+        <p class="text-xs text-[var(--ink)] leading-relaxed">
+          Stopping <strong id="cancel-confirm-track-name">this track</strong> will mark it as <code class="mono bg-[var(--err)] text-[var(--err-ink)] px-1 rounded">Failed (ERR_TASK_CANCELLED)</code>, clean up temporary files, and pause the queue so remaining <code class="mono bg-[var(--chip)] px-1 rounded">Queued</code> tracks wait until you press <strong>Resume</strong>.
+        </p>
+        <div class="flex items-center justify-end gap-2.5 pt-2 border-t-2 border-[var(--line)]">
+          <button id="cancel-confirm-no-btn" type="button" class="btn btn-s">NO, KEEP GOING</button>
+          <button id="cancel-confirm-yes-btn" type="button" class="btn btn-d">YES, CANCEL</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOARD 14: 10-STAGE TASK DETAIL MODAL -->
+  <div id="modal-task-stages" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="task-stages-title">
+    <div class="w-full max-w-[560px] rounded-[24px] border-[3px] border-[var(--ink)] bg-[var(--pinkbz)] p-4 shadow-[0_8px_0_#2B2540]">
+      <div class="flex items-center justify-between mb-2">
+        <span class="sil text-xs px-2.5 py-1 rounded-full bg-[var(--paper)] border-2 border-[var(--ink)] font-bold">TASK PIPELINE DETAIL · 10 STAGES</span>
+        <button id="task-stages-close-btn" type="button" class="ibtn">×</button>
+      </div>
+      <div class="rounded-2xl border-[2.5px] border-[var(--ink)] bg-[var(--paper)] p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 id="task-stages-title" class="font-bold text-sm text-[var(--ink)]">Track Pipeline</h2>
+            <p id="task-stages-subtitle" class="mono text-xs text-[var(--violet-2)]">—</p>
+          </div>
+          <span id="task-stages-badge" class="sil text-xs px-2.5 py-1 rounded border border-[var(--ink)] bg-[var(--chip)] font-bold">STAGE 00/10</span>
+        </div>
+        <div id="task-stages-list" class="space-y-1.5 max-h-[360px] overflow-y-auto pr-1"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOARD 15: QUEUE FINISHED SUMMARY MODAL -->
+  <div id="modal-queue-summary" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="summary-title">
+    <div class="w-full max-w-[560px] rounded-[24px] border-[3px] border-[var(--ink)] bg-[var(--pinkbz)] p-4 shadow-[0_8px_0_#2B2540]">
+      <div class="flex items-center justify-between mb-2">
+        <span class="sil text-xs px-2.5 py-1 rounded-full bg-[var(--mint)] text-[var(--mint-ink)] border-2 border-[var(--ink)] font-bold">QUEUE FINISHED</span>
+        <span class="sil text-xs px-2.5 py-0.5 rounded bg-[var(--note)] border border-[var(--ink)] font-bold">"Side A complete!"</span>
+      </div>
+      <div class="rounded-2xl border-[2.5px] border-[var(--ink)] bg-[var(--paper)] p-5 space-y-4">
+        <h2 id="summary-title" class="dela text-lg text-[var(--ink)]">BATCH RUN SUMMARY</h2>
+        <div class="grid grid-cols-3 gap-2.5 text-center">
+          <div class="rounded-xl border-2 border-[var(--ink)] bg-[var(--mint)] p-3">
+            <div id="summary-completed-count" class="dela text-2xl text-[var(--mint-ink)]">0</div>
+            <div class="sil text-xs text-[var(--mint-ink)] font-bold">COMPLETED</div>
+          </div>
+          <div class="rounded-xl border-2 border-[var(--ink)] bg-[var(--err)] p-3">
+            <div id="summary-failed-count" class="dela text-2xl text-[var(--err-ink)]">0</div>
+            <div class="sil text-xs text-[var(--err-ink)] font-bold">FAILED</div>
+          </div>
+          <div class="rounded-xl border-2 border-[var(--ink)] bg-[var(--warn)] p-3">
+            <div id="summary-nocover-count" class="dela text-2xl text-[var(--warn-ink)]">0</div>
+            <div class="sil text-xs text-[var(--warn-ink)] font-bold">! NO COVER</div>
+          </div>
+        </div>
+        <div id="summary-failed-list" class="space-y-1.5 max-h-[160px] overflow-y-auto empty:hidden"></div>
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t-2 border-[var(--line)]">
+          <div class="flex items-center gap-2">
+            <button id="summary-view-history-btn" type="button" class="btn btn-s">VIEW HISTORY</button>
+            <button id="summary-open-folder-btn" type="button" class="btn btn-s">OPEN FOLDER ON CARD</button>
+          </div>
+          <button id="summary-done-btn" type="button" class="btn btn-p">DONE</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOARD 16: YT-DLP MODULE UPDATER MODAL -->
+  <div id="modal-updater" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="updater-title">
+    <div class="w-full max-w-[520px] rounded-[24px] border-[3px] border-[var(--ink)] bg-[var(--pinkbz)] p-4 shadow-[0_8px_0_#2B2540]">
+      <div class="flex items-center justify-between mb-2">
+        <span class="sil text-xs px-2.5 py-1 rounded-full bg-[var(--paper)] border-2 border-[var(--ink)] font-bold">YT-DLP MODULE UPDATER</span>
+        <button id="updater-close-btn" type="button" class="ibtn">×</button>
+      </div>
+      <div class="rounded-2xl border-[2.5px] border-[var(--ink)] bg-[var(--paper)] p-5 space-y-4">
+        <h2 id="updater-title" class="dela text-lg text-[var(--ink)]">STANDALONE YT-DLP.EXE</h2>
+        <div class="rounded-xl border-2 border-[var(--ink)] bg-[var(--soft)] p-3.5 flex items-center justify-between">
+          <div>
+            <div class="sil text-xs text-[var(--violet)] font-bold">INSTALLED VERSION</div>
+            <div id="updater-current-ver" class="mono text-sm font-bold text-[var(--ink)]">—</div>
+          </div>
+          <div class="text-right">
+            <div class="sil text-xs text-[var(--violet)] font-bold">NEW VERSION</div>
+            <div id="updater-new-ver" class="mono text-sm font-bold text-[var(--mint-ink)]">—</div>
+          </div>
+        </div>
+        <div id="updater-status-msg" class="rounded-xl border-2 border-[var(--ink)] bg-[var(--chip)] p-3 text-xs text-[var(--ink)]">
+          Downloads latest <code class="mono">yt-dlp.exe</code> to a temporary file, verifies <code class="mono">--version</code>, and atomically replaces the binary.
+        </div>
+        <div class="flex items-center justify-end gap-2 pt-2 border-t-2 border-[var(--line)]">
+          <button id="updater-run-btn" type="button" class="btn btn-p">UPDATE NOW</button>
+          <button id="updater-done-btn" type="button" class="btn btn-s">CLOSE</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOARD 17: PLADAZ.LOG ERROR DETAILS MODAL -->
+  <div id="modal-error-log" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="error-log-title">
+    <div class="w-full max-w-[680px] rounded-[24px] border-[3px] border-[var(--ink)] bg-[var(--pinkbz)] p-4 shadow-[0_8px_0_#2B2540]">
+      <div class="flex items-center justify-between mb-2">
+        <span class="sil text-xs px-2.5 py-1 rounded-full bg-[var(--err)] text-[var(--err-ink)] border-2 border-[var(--ink)] font-bold">DIAGNOSTIC LOG VIEWER · PLADAZ.LOG</span>
+        <button id="error-log-close-btn" type="button" class="ibtn">×</button>
+      </div>
+      <div class="rounded-2xl border-[2.5px] border-[var(--ink)] bg-[var(--paper)] p-4 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h2 id="error-log-title" class="dela text-base text-[var(--ink)]">SYSTEM ERROR &amp; RECENT LOGS</h2>
+          <span id="error-log-code-badge" class="mono text-xs px-2.5 py-0.5 rounded bg-[var(--err)] text-[var(--err-ink)] border border-[var(--ink)] font-bold">ERR_LOG</span>
+        </div>
+        <p id="error-log-message" class="text-xs text-[var(--ink)] font-medium">—</p>
+        <div id="error-log-terminal" class="rounded-xl border-2 border-[var(--ink)] bg-[#1F1A30] text-[#EEE9FD] p-3 mono text-xs h-[240px] overflow-y-auto space-y-1 selectable"></div>
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t-2 border-[var(--line)]">
+          <div class="flex items-center gap-2">
+            <button id="error-log-copy-btn" type="button" class="btn btn-s py-1.5 px-3">COPY DETAILS</button>
+            <button id="error-log-open-folder-btn" type="button" class="btn btn-s py-1.5 px-3">OPEN LOG FOLDER</button>
+          </div>
+          <button id="error-log-done-btn" type="button" class="btn btn-p py-1.5 px-4">CLOSE</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOARD 20: ABOUT PLADAZ MODAL -->
+  <div id="modal-about" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="about-title">
+    <div class="w-full max-w-[560px] rounded-[24px] border-[3px] border-[var(--ink)] bg-[var(--pinkbz)] p-4 shadow-[0_8px_0_#2B2540]">
+      <div class="flex items-center justify-between mb-2">
+        <span class="sil text-xs px-2.5 py-1 rounded-full bg-[var(--paper)] border-2 border-[var(--ink)] font-bold">ABOUT PLADAZ</span>
+        <button id="about-close-btn" type="button" class="ibtn">×</button>
+      </div>
+      <div class="rounded-2xl border-[2.5px] border-[var(--ink)] bg-[var(--paper)] p-5 space-y-4">
+        <div class="flex items-center gap-3.5">
+          <div class="w-12 h-12 rounded-2xl bg-[var(--hot)] border-[2.5px] border-[var(--ink)] shadow-[0_3px_0_#2B2540] flex items-center justify-center text-white dela text-xl">P</div>
+          <div>
+            <h2 id="about-title" class="dela text-lg text-[var(--ink)]">PLADAZ <span id="about-version" class="mono text-xs text-[var(--violet)]">v1.0.0</span></h2>
+            <p class="sil text-xs text-[var(--violet-2)]">LAVENDER PLAYER OS · MUSIC EDITION · SNOWSKY ECHO DAP</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div class="rounded-xl border-2 border-[var(--ink)] bg-[var(--soft)] p-2.5">
+            <div class="sil text-xs text-[var(--violet)] font-bold">AUDIO OUTPUT</div>
+            <div class="mono font-bold mt-0.5">AAC-LC (mp4a.40.2) · .m4a</div>
+          </div>
+          <div class="rounded-xl border-2 border-[var(--ink)] bg-[var(--soft)] p-2.5">
+            <div class="sil text-xs text-[var(--violet)] font-bold">COVER ART</div>
+            <div class="mono font-bold mt-0.5">800 × 800 JPEG (1:1)</div>
+          </div>
+          <div class="rounded-xl border-2 border-[var(--ink)] bg-[var(--soft)] p-2.5">
+            <div class="sil text-xs text-[var(--violet)] font-bold">YT-DLP VERSION</div>
+            <div id="about-ytdlp-ver" class="mono font-bold mt-0.5">—</div>
+          </div>
+          <div class="rounded-xl border-2 border-[var(--ink)] bg-[var(--soft)] p-2.5">
+            <div class="sil text-xs text-[var(--violet)] font-bold">FFMPEG VERSION</div>
+            <div id="about-ffmpeg-ver" class="mono font-bold mt-0.5">bundled</div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <button id="about-open-disclaimer-btn" type="button" class="pbtn lav">PERSONAL USE DISCLAIMER ›</button>
+          <button id="about-toggle-notices-btn" type="button" class="pbtn">THIRD-PARTY NOTICES ›</button>
+          <button id="about-open-logs-btn" type="button" class="pbtn">OPEN LOG FOLDER ›</button>
+        </div>
+
+        <!-- Third-Party Notices Drawer (Approved Proposal #4) -->
+        <div id="about-notices-panel" class="hidden rounded-xl border-2 border-[var(--ink)] bg-[var(--soft)] p-3 text-xs space-y-1.5 max-h-[150px] overflow-y-auto selectable">
+          <div class="sil text-xs font-bold text-[var(--violet)]">THIRD-PARTY OPEN SOURCE NOTICES</div>
+          <p><strong>yt-dlp:</strong> Released into the Public Domain (The Unlicense). External standalone executable.</p>
+          <p><strong>FFmpeg:</strong> Licensed under the GPLv2+ / GPLv3+ (<code class="mono">https://ffmpeg.org</code>, bundled release build).</p>
+          <p><strong>Fonts:</strong> Dela Gothic One, Silkscreen, IBM Plex Sans Thai, and IBM Plex Mono are licensed under the SIL Open Font License 1.1 (OFL-1.1).</p>
+          <p><strong>Python Packages:</strong> mutagen (GPLv2+), Pillow (HPND), psutil (BSD-3-Clause), pywebview (BSD-3-Clause).</p>
+        </div>
+
+        <div class="flex justify-end pt-2 border-t-2 border-[var(--line)]">
+          <button id="about-back-btn" type="button" class="btn btn-p">‹ BACK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./js/bridge.js"></script>
+  <script src="./js/app.js"></script>
+</body>
+</html>
+

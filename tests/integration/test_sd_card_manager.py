@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import Optional
 import pytest
 
+pytestmark = [pytest.mark.integration, pytest.mark.fs]
+
 from pladaz.domain.errors import (
     ErrorCode,
     SDCardDisconnectedError,

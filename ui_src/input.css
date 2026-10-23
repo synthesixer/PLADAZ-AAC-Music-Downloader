@@ -1,0 +1,420 @@
+@import "../ui/fonts/fonts.css";
+@tailwind base;
+@tailwind components;
+:root {
+    --ink: #2B2540;
+    --violet: #4B36A8;
+    --violet-2: #5E4E9E;
+    --header: #7A5FE0;
+    --header-sh: #3A2790;
+    --bezel: #C9BCF5;
+    --bezel-sh: #A995EE;
+    --ring: #8F78EA;
+    --pinkbz: #F7B3D8;
+    --pinkbz-sh: #EE8DC2;
+    --pink-soft: #F9C6E4;
+    --accent: #D6338C;
+    --hot: #F25AAE;
+    --sky: #9FD4F7;
+    --mint: #BFF0D4;
+    --mint-bd: #4CB97E;
+    --mint-ink: #12502F;
+    --paper: #FBFAFF;
+    --soft: #F4F0FE;
+    --chip: #EEE9FD;
+    --line: #CFC3F6;
+    --warn: #FFF1C2;
+    --warn-bd: #E0A800;
+    --warn-ink: #6B4A00;
+    --err: #FFE0EE;
+    --err-ink: #A3245F;
+    --note: #FFF6B8;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    width: 100%;
+    min-height: 100vh;
+    background: var(--bezel);
+    color: var(--ink);
+    font-family: "IBM Plex Sans Thai", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+    overflow-x: hidden;
+}
+
+input,
+textarea,
+select,
+code,
+pre,
+.selectable {
+    user-select: text;
+}
+
+.checker {
+    background-color: #DCD2FA;
+    background-image: linear-gradient(45deg, #CFC3F6 25%, transparent 25%), linear-gradient(-45deg, #CFC3F6 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #CFC3F6 75%), linear-gradient(-45deg, transparent 75%, #CFC3F6 75%);
+    background-size: 28px 28px;
+    background-position: 0 0, 0 14px, 14px -14px, -14px 0;
+}
+
+.scallop {
+    background: radial-gradient(circle at 12px 0, transparent 10px, var(--bezel) 10.5px) repeat-x;
+    background-size: 24px 14px;
+}
+
+.dotgrid {
+    background-image: radial-gradient(#CFC3F6 1.25px, transparent 1.25px);
+    background-size: 12px 12px;
+}
+
+.cover {
+    background: radial-gradient(circle at 28% 24%, #FFE6F4 0%, rgba(255, 230, 244, 0) 42%), radial-gradient(circle at 78% 76%, #9FD4F7 0%, rgba(159, 212, 247, 0) 48%), linear-gradient(135deg, #7A5FE0 0%, #D6338C 54%, #FFB0D9 100%);
+}
+
+.sil {
+    font-family: "Silkscreen", monospace;
+    letter-spacing: 0.04em;
+}
+
+.dela {
+    font-family: "Dela Gothic One", "IBM Plex Sans Thai", sans-serif;
+}
+
+.mono {
+    font-family: "IBM Plex Mono", monospace;
+    font-variant-numeric: tabular-nums;
+}
+
+
+/* Tactile arcade buttons (Board 18 specification) */
+
+.btn,
+.pbtn,
+.ibtn {
+    font-family: "Silkscreen", monospace;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 80ms ease, box-shadow 80ms ease, background-color 120ms ease, filter 120ms ease;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: 12px;
+    border: 2.5px solid var(--ink);
+    font-size: 12px;
+    font-weight: 700;
+    box-shadow: 0 4px 0 var(--ink);
+}
+
+.btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 0 var(--ink);
+    filter: brightness(1.03);
+}
+
+.btn:active:not(:disabled) {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 var(--ink);
+}
+
+.btn:focus-visible,
+.pbtn:focus-visible,
+.ibtn:focus-visible {
+    outline: none;
+    box-shadow: 0 4px 0 var(--ink), 0 0 0 3px var(--paper), 0 0 0 6px var(--accent);
+}
+
+.btn:disabled,
+.btn[aria-disabled="true"],
+.pbtn:disabled,
+.ibtn:disabled {
+    background: #E5E0F8 !important;
+    color: #8D82B8 !important;
+    border-color: #8D82B8 !important;
+    box-shadow: 0 2px 0 #8D82B8 !important;
+    cursor: not-allowed;
+    transform: none !important;
+    filter: none !important;
+}
+
+.btn-p {
+    background: var(--hot);
+    color: #FFFFFF;
+}
+
+.btn-s {
+    background: var(--paper);
+    color: var(--ink);
+}
+
+.btn-s:hover:not(:disabled) {
+    background: var(--soft);
+}
+
+.btn-d {
+    background: var(--err);
+    color: var(--err-ink);
+}
+
+
+/* Pixel header/chip buttons */
+
+.pbtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 11px;
+    border-radius: 8px;
+    border: 2px solid var(--ink);
+    font-size: 12px;
+    font-weight: 700;
+    background: var(--paper);
+    color: var(--ink);
+    box-shadow: 0 3px 0 var(--ink);
+}
+
+.pbtn.lav {
+    background: var(--chip);
+    color: var(--violet);
+}
+
+.pbtn.mint {
+    background: var(--mint);
+    color: var(--mint-ink);
+}
+
+.pbtn.hot {
+    background: var(--hot);
+    color: #FFFFFF;
+}
+
+.pbtn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 0 var(--ink);
+}
+
+.pbtn:active:not(:disabled) {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 var(--ink);
+}
+
+
+/* Square icon buttons */
+
+.ibtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 700;
+    box-shadow: 0 2px 0 var(--ink);
+}
+
+.ibtn:hover:not(:disabled) {
+    background: var(--chip);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 0 var(--ink);
+}
+
+.ibtn:active:not(:disabled) {
+    transform: translateY(1px);
+    box-shadow: 0 1px 0 var(--ink);
+}
+
+
+/* Turntable & equalizer animations */
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes eq {
+    0%,
+    100% {
+        transform: scaleY(0.3);
+    }
+    50% {
+        transform: scaleY(1);
+    }
+}
+
+@keyframes blink {
+    0%,
+    49% {
+        opacity: 1;
+    }
+    50%,
+    100% {
+        opacity: 0.25;
+    }
+}
+
+@keyframes shimmer {
+    0%,
+    100% {
+        opacity: 0.45;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+.spin {
+    animation: spin 9s linear infinite;
+}
+
+.spin-paused {
+    animation-play-state: paused;
+}
+
+.eqbar {
+    transform-origin: bottom;
+    animation: eq 0.9s ease-in-out infinite;
+}
+
+.blink {
+    animation: blink 1.1s steps(2, end) infinite;
+}
+
+.skel {
+    animation: shimmer 1.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .spin,
+    .eqbar,
+    .blink,
+    .skel {
+        animation: none !important;
+    }
+    .btn,
+    .pbtn,
+    .ibtn {
+        transition: none !important;
+    }
+}
+
+
+/* Modal overlay backdrop */
+
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgba(43, 37, 64, 0.58);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+
+/* Responsive layout rules matching Board 19 (19_Narrow.dc.html) */
+
+.main-workspace-grid {
+    display: grid;
+    grid-template-columns: 1fr 450px;
+    gap: 20px;
+}
+
+.mobile-mini-player {
+    display: none;
+}
+
+.mobile-bottom-tabs {
+    display: none;
+}
+
+@media (max-width: 1023px) {
+    .main-workspace-grid {
+        grid-template-columns: 1fr;
+    }
+    .desktop-now-processing-col {
+        display: none;
+    }
+    .mobile-mini-player {
+        display: flex;
+    }
+    .nav-tab-label {
+        display: none;
+    }
+}
+
+@media (max-width: 639px) {
+    .header-desktop-nav {
+        display: none !important;
+    }
+    .header-vinyl-counter {
+        display: none !important;
+    }
+    .mobile-bottom-tabs {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+    }
+    .add-btn-text {
+        display: none;
+    }
+}
+
+/* Speech bubble with triangle tail (Design Direction B.7) */
+
+.speech-bubble {
+    position: relative;
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    border-radius: 12px;
+}
+
+.speech-bubble::before {
+    content: "";
+    position: absolute;
+    left: -8px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-width: 6px 8px 6px 0;
+    border-style: solid;
+    border-color: transparent var(--ink) transparent transparent;
+}
+
+.speech-bubble::after {
+    content: "";
+    position: absolute;
+    left: -5px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-width: 5px 6px 5px 0;
+    border-style: solid;
+    border-color: transparent var(--paper) transparent transparent;
+}
+
+@tailwind utilities;
+
+/* Ensure .hidden always wins over custom component display rules (.modal-backdrop, .btn, .pbtn, .ibtn, .grid, .flex) */
+
+.hidden,
+[hidden] {
+    display: none !important;
+}

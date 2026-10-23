@@ -4,6 +4,8 @@ from io import BytesIO
 from pathlib import Path
 from typing import Optional
 import pytest
+
+pytestmark = pytest.mark.unit
 from mutagen.mp4 import MP4, MP4Cover
 from PIL import Image
 

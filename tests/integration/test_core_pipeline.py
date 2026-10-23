@@ -2,6 +2,9 @@
 
 import ast
 from pathlib import Path
+import pytest
+
+pytestmark = pytest.mark.integration
 
 from mutagen.mp4 import MP4
 

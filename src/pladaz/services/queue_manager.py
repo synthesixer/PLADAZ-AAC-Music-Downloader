@@ -1,11 +1,12 @@
 """DownloadQueueManager service implementing Sequential Worker, 9-step Pipeline, Conflict Resolution, and SD Card Watcher (SYSTEM_DESIGN.md 3.1-3.6, DEC-023, DEC-036, DEC-039..044)."""
 
 from datetime import datetime, timezone
+import base64
 from pathlib import Path
 import shutil
 from threading import Event, Lock, Thread
 import time
-from typing import Optional
+from typing import Any, Optional
 import uuid
 
 from pladaz.bridge.events import EventDispatcher
@@ -90,6 +91,7 @@ class DownloadQueueManager:
         self._conflict_events: dict[str, Event] = {}
         self._conflict_resolutions: dict[str, ConflictAction] = {}
         self._pending_conflict_album_keys: dict[str, str] = {}
+        self._pending_conflict_payloads: dict[str, dict[str, Any]] = {}
 
         # In-memory Apply-to-all rules (DEC-044: never persisted to config.json)
         self._album_conflict_rules: dict[str, ConflictAction] = {}
@@ -123,6 +125,58 @@ class DownloadQueueManager:
                 if t.task_id == task_id:
                     return t
         return None
+
+    def get_cover_data_url(self, task_id: str) -> Optional[str]:
+        """Return Base64 JPEG Data URL (`data:image/jpeg;base64,...`) for `task_id` if cover art is present (SYSTEM_DESIGN.md 2.6)."""
+        task = self.get_task(task_id)
+        if task is None or task.metadata is None or not task.metadata.cover_jpeg:
+            return None
+        b64 = base64.b64encode(task.metadata.cover_jpeg).decode("ascii")
+        return f"data:image/jpeg;base64,{b64}"
+
+    def is_queue_running(self) -> bool:
+        with self._lock:
+            return bool(self._worker_active)
+
+    def is_queue_halted(self) -> bool:
+        with self._lock:
+            return bool(self._queue_halted)
+
+    def get_pending_conflict(self) -> Optional[dict[str, Any]]:
+        """Return active conflict prompt payload if a task is currently in waiting_conflict stage."""
+        with self._lock:
+            for t in self._tasks:
+                if t.stage == Stage.WAITING_CONFLICT:
+                    if t.task_id in self._pending_conflict_payloads:
+                        return dict(self._pending_conflict_payloads[t.task_id])
+                    meta = t.metadata
+                    return {
+                        "task_id": t.task_id,
+                        "existing_path": str(t.target_file_path) if t.target_file_path else "",
+                        "metadata_summary": {
+                            "title": meta.title if meta else "",
+                            "album_artist": meta.album_artist if meta else None,
+                            "album": meta.album if meta else None,
+                        },
+                    }
+            if self._pending_conflict_payloads:
+                first_key = next(iter(self._pending_conflict_payloads))
+                return dict(self._pending_conflict_payloads[first_key])
+        return None
+
+    def _emit_queue_updated(self, snapshot: list[TrackTask]) -> None:
+        self._events.emit_queue_updated(
+            snapshot,
+            queue_running=self.is_queue_running(),
+            queue_halted=self.is_queue_halted(),
+        )
+
+    def _emit_task_status_changed(self, task: TrackTask) -> None:
+        self._events.emit_task_status_changed(
+            task,
+            queue_running=self.is_queue_running(),
+            queue_halted=self.is_queue_halted(),
+        )
 
     def _get_cookies_path(self) -> Optional[Path]:
         cfg = self._config_store.load_config()
@@ -173,7 +227,7 @@ class DownloadQueueManager:
                 added_tasks.append(task)
             snapshot = list(self._tasks)
 
-        self._events.emit_queue_updated(snapshot)
+        self._emit_queue_updated(snapshot)
         return added_tasks
 
     def start_queue(self, background: bool = True) -> None:
@@ -235,6 +289,9 @@ class DownloadQueueManager:
                 self._check_and_reset_queue_scope_unlocked()
                 queued_cancelled = True
             elif target_task.status == TaskStatus.DOWNLOADING:
+                # Board 11 (CancelConfirm): Cancelling the active task marks it Failed (ERR_TASK_CANCELLED)
+                # and halts the queue so remaining Queued tasks wait for Resume.
+                self._queue_halted = True
                 cancel_ev = self._cancel_events.setdefault(task_id, Event())
                 cancel_ev.set()
                 conflict_ev = self._conflict_events.get(task_id)
@@ -245,7 +302,7 @@ class DownloadQueueManager:
                 return False
 
         if queued_cancelled and target_task is not None:
-            self._events.emit_task_status_changed(target_task)
+            self._emit_task_status_changed(target_task)
         return True
 
     def retry(self, task_id: str) -> Optional[TrackTask]:
@@ -265,8 +322,8 @@ class DownloadQueueManager:
             else:
                 return None
 
-        self._events.emit_task_status_changed(t)
-        self._events.emit_queue_updated(snapshot)
+        self._emit_task_status_changed(t)
+        self._emit_queue_updated(snapshot)
         return t
 
     def remove(self, task_id: str) -> bool:
@@ -284,7 +341,7 @@ class DownloadQueueManager:
             else:
                 return False
 
-        self._events.emit_queue_updated(snapshot)
+        self._emit_queue_updated(snapshot)
         return True
 
     def clear_completed_tasks(self) -> None:
@@ -295,14 +352,14 @@ class DownloadQueueManager:
             ]
             self._check_and_reset_queue_scope_unlocked()
             snapshot = list(self._tasks)
-        self._events.emit_queue_updated(snapshot)
+        self._emit_queue_updated(snapshot)
 
     def resolve_conflict(
         self,
         task_id: str,
         action: ConflictAction | str,
         scope: ConflictScope | str = ConflictScope.SINGLE,
-    ) -> None:
+    ) -> bool:
         """Resolve a pending destination file conflict and optionally store an Apply-to-all rule (DEC-019, DEC-044)."""
         resolved_action = (
             action if isinstance(action, ConflictAction) else ConflictAction(action)
@@ -312,6 +369,11 @@ class DownloadQueueManager:
         )
 
         with self._lock:
+            task_exists = any(t.task_id == task_id for t in self._tasks)
+            has_event = task_id in self._conflict_events
+            if not task_exists and not has_event:
+                return False
+
             self._conflict_resolutions[task_id] = resolved_action
             album_key = self._pending_conflict_album_keys.get(task_id)
 
@@ -322,9 +384,11 @@ class DownloadQueueManager:
                 # DEC-044: Apply to all in queue applies to all tasks in the current queue run until the queue becomes empty
                 self._queue_conflict_rule = resolved_action
 
+            self._pending_conflict_payloads.pop(task_id, None)
             ev = self._conflict_events.get(task_id)
             if ev is not None:
                 ev.set()
+            return True
 
     def _check_and_reset_queue_scope_unlocked(self) -> None:
         """Reset `Apply to all in queue` rule when no Queued or Downloading tasks remain (DEC-044)."""
@@ -453,14 +517,14 @@ class DownloadQueueManager:
                 )
                 self._cleanup_task_temp_dir(task_id)
                 self._record_history_entry(task)
-                self._events.emit_task_status_changed(task)
+                self._emit_task_status_changed(task)
                 return
 
             task.status = TaskStatus.DOWNLOADING
             task.stage = Stage.CHECKING_SD
             task.progress_percent = 0.0
 
-        self._events.emit_task_status_changed(task)
+        self._emit_task_status_changed(task)
 
         stop_watcher_ev = Event()
         watcher_thread: Optional[Thread] = None
@@ -523,6 +587,7 @@ class DownloadQueueManager:
                         self._conflict_events.pop(task_id, None)
                         self._conflict_resolutions.pop(task_id, None)
                         self._pending_conflict_album_keys.pop(task_id, None)
+                        self._pending_conflict_payloads.pop(task_id, None)
                         snapshot = list(self._tasks)
                     if self._logger:
                         self._logger.info(
@@ -531,7 +596,7 @@ class DownloadQueueManager:
                             task_id=task_id,
                             stage=Stage.CHECKING_DUPLICATE,
                         )
-                    self._events.emit_queue_updated(snapshot)
+                    self._emit_queue_updated(snapshot)
                     return
 
                 if chosen_action == ConflictAction.KEEP_BOTH:
@@ -591,6 +656,7 @@ class DownloadQueueManager:
                 temp_m4a_path,
                 require_cover=require_cover,
             )
+            task.validation_result = val_result
             if not val_result.is_valid:
                 err_code = (
                     val_result.error_code or ErrorCode.ERR_VALIDATOR_CORRUPT_FILE
@@ -629,7 +695,7 @@ class DownloadQueueManager:
                     message=f"Task completed: {final_sd_path}",
                     task_id=task_id,
                 )
-            self._events.emit_task_status_changed(task)
+            self._emit_task_status_changed(task)
 
         except Exception as exc:
             self._handle_task_exception(task, exc)
@@ -649,6 +715,12 @@ class DownloadQueueManager:
     ) -> ConflictAction:
         """Return remembered Apply-to-all action or emit `task:conflict_prompt` and wait for user decision (DEC-019, DEC-044)."""
         task_id = task.task_id
+        meta = task.metadata
+        metadata_summary = {
+            "title": meta.title if meta else "",
+            "album_artist": meta.album_artist if meta else None,
+            "album": meta.album if meta else None,
+        }
         with self._lock:
             if self._queue_conflict_rule is not None:
                 return self._queue_conflict_rule
@@ -658,22 +730,24 @@ class DownloadQueueManager:
             conflict_ev = Event()
             self._conflict_events[task_id] = conflict_ev
             self._pending_conflict_album_keys[task_id] = album_key
+            self._pending_conflict_payloads[task_id] = {
+                "task_id": task_id,
+                "existing_path": str(target_path),
+                "metadata_summary": metadata_summary,
+            }
             task.stage = Stage.WAITING_CONFLICT
 
-        meta = task.metadata
-        self._events.emit_task_status_changed(task)
+        self._emit_task_status_changed(task)
         self._events.emit_task_conflict_prompt(
             task_id=task_id,
             existing_path=str(target_path),
-            metadata_summary={
-                "title": meta.title if meta else "",
-                "album_artist": meta.album_artist if meta else None,
-                "album": meta.album if meta else None,
-            },
+            metadata_summary=metadata_summary,
         )
 
         # Wait until user calls resolve_conflict(), or task is cancelled / SD card disconnects
         conflict_ev.wait()
+        with self._lock:
+            self._pending_conflict_payloads.pop(task_id, None)
         self._check_interrupted(task_id, cancel_ev)
 
         with self._lock:
@@ -758,4 +832,4 @@ class DownloadQueueManager:
             )
 
         self._record_history_entry(task)
-        self._events.emit_task_status_changed(task)
+        self._emit_task_status_changed(task)

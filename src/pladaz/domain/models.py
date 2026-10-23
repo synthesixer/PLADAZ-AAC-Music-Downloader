@@ -147,6 +147,7 @@ class TrackTask:
     target_file_path: Optional[Path] = None
     warnings: list[str] = field(default_factory=list)
     error: Optional[StructuredError] = None
+    validation_result: Optional[ValidationResult] = None
 
 
 @dataclass

@@ -3,6 +3,7 @@
 from io import BytesIO
 from pathlib import Path
 from typing import Optional
+import urllib.request
 
 from mutagen.mp4 import MP4, MP4Cover
 from PIL import Image, UnidentifiedImageError
@@ -145,17 +146,41 @@ class MetadataAlbumArtService:
             album_artist = track_artist
 
         cover_jpeg: Optional[bytes] = None
-        if cover_url and self._external_fetcher is not None:
-            try:
-                raw_cover = self._external_fetcher.fetch_cover_bytes(cover_url)
-                if raw_cover:
-                    cover_jpeg = self.process_cover(raw_cover)
-            except Exception as exc:
-                if self._logger:
-                    self._logger.warning(
-                        component="MetadataAlbumArtService",
-                        message=f"Cover fetch/process failed: {exc}",
+        if cover_url:
+            raw_cover: Optional[bytes] = None
+            if self._external_fetcher is not None:
+                try:
+                    raw_cover = self._external_fetcher.fetch_cover_bytes(cover_url)
+                except Exception as exc:
+                    if self._logger:
+                        self._logger.warning(
+                            component="MetadataAlbumArtService",
+                            message=f"Cover fetch failed via external fetcher: {exc}",
+                        )
+            else:
+                try:
+                    req = urllib.request.Request(
+                        cover_url,
+                        headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PLADAZ/1.0"},
                     )
+                    with urllib.request.urlopen(req, timeout=10.0) as resp:
+                        raw_cover = resp.read()
+                except Exception as exc:
+                    if self._logger:
+                        self._logger.warning(
+                            component="MetadataAlbumArtService",
+                            message=f"Direct cover fetch failed: {exc}",
+                        )
+
+            if raw_cover:
+                try:
+                    cover_jpeg = self.process_cover(raw_cover)
+                except Exception as exc:
+                    if self._logger:
+                        self._logger.warning(
+                            component="MetadataAlbumArtService",
+                            message=f"Cover process failed: {exc}",
+                        )
 
         return TrackMetadata(
             title=title,

@@ -4,6 +4,8 @@ from pathlib import Path
 from threading import Event
 import pytest
 
+pytestmark = pytest.mark.unit
+
 from pladaz.domain.enums import AudioProcessMode
 from pladaz.domain.errors import (
     ErrorCode,

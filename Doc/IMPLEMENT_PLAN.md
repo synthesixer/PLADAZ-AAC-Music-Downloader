@@ -5,7 +5,7 @@
 > **ภาษา:** ไทย  
 > **ชื่อโครงการ:** PLADAZ  
 > **สถานะ:** แผนการพัฒนาที่ยืนยันสถาปัตยกรรมและรายละเอียดทางเทคนิคหลักแล้ว (ส่วน UI Design แยกอ้างอิงในเอกสาร Design Direction โดยตรง; คงเหลือ TBA-023 เกณฑ์ตัวเลขประสิทธิภาพ, TBA-026 รายละเอียดการเทียบชื่อเพลง/ศิลปินกับผลค้นหา และ TBA-027 bitrate ของ fallback encode)  
-> **เวอร์ชันเอกสาร:** 2.3  
+> **เวอร์ชันเอกสาร:** 2.5  
 > **แพลตฟอร์มเป้าหมาย:** Windows  
 > **ข้อกำหนดสำคัญ:** ห้าม AI เติมข้อมูลที่ไม่มีหลักฐานหรือเปลี่ยนข้อกำหนดที่ระบุว่าเป็น Immutable Requirements โดยไม่ได้รับอนุญาต
 
@@ -327,7 +327,7 @@
   - **ค่าเริ่มต้น:** ไฟล์ผ่าน Output Validator ได้ สถานะเป็น `Completed` พร้อมแสดงคำเตือนว่าไม่มีปก
   - **เมื่อผู้ใช้เปลี่ยนสวิตซ์ (บังคับต้องมีปก):** ไม่มีปกถือว่าไม่ผ่าน Output Validator สถานะเป็น `Failed`
 - คำเตือนไม่ทำให้เกิดสถานะใหม่ สถานะยังเป็น 4 สถานะตาม IR-017
-- ชื่อคีย์ใน `config.json`, ตำแหน่งในหน้าตั้งค่า และรูปแบบการแสดงคำเตือน: ยังไม่ได้กำหนด ให้กำหนดตอนออกแบบ UI (ปัจจุบัน Mockup ยังไม่มีหน้าตั้งค่าและคำเตือนนี้)
+- ชื่อคีย์ใน `config.json` ยืนยันใช้ `"require_album_art"` แสดงเป็นสวิตซ์ `Require album art` ในหน้า Settings (บอร์ด 06) และแสดงป้ายเตือน `! No cover` คู่กับสถานะ `Completed` (DEC-050)
 
 ---
 
@@ -448,24 +448,24 @@ Test Cases ต่อไปนี้เป็นข้อเสนอสำหร
 - [x] พัฒนา Output Validator ตรวจสอบความถูกต้องของไฟล์ AAC, Metadata และภาพปก
 - [x] เพิ่ม Logging และการจัดการข้อผิดพลาดพื้นฐาน
 
-### Phase 3 — เชื่อมต่อกระบวนการเพลง
+### Phase 3 — เชื่อมต่อกระบวนการเพลง (ดำเนินการส่วนโค้ดและชุดทดสอบอัตโนมัติแล้ว — ดูบันทึกผลใน [`PROJECT_PROGRESS.md`](file:///e:/Doc/Code/randombullshit/PLADAZV2/Doc/PROJECT_PROGRESS.md))
 
-- [ ] พัฒนา Adapter สำหรับแหล่งข้อมูลโดยใช้ `yt-dlp` และ `FFmpeg` (รองรับลิงก์เพลงเดี่ยว, Playlist และอัลบั้ม พร้อมตัวเลือก `cookies.txt` และการอัปเดต `yt-dlp`)
-- [ ] พัฒนา Download Queue Manager สำหรับจัดการคิวเพลงต่อเนื่องและสถานะ Queued / Downloading / Completed / Failed
-- [ ] เชื่อมขั้นตอนรับข้อมูล ประมวลผล Metadata และบันทึกไฟล์
-- [ ] ผสานการทำงานกับ Output Validator ก่อนแจ้งงานสำเร็จ
-- [ ] ทดสอบการทำงานกับไฟล์และอุปกรณ์จริง
+- [x] พัฒนา Adapter สำหรับแหล่งข้อมูลโดยใช้ `yt-dlp` และ `FFmpeg` (รองรับลิงก์เพลงเดี่ยว, Playlist และอัลบั้ม พร้อมตัวเลือก `cookies.txt` และการอัปเดต `yt-dlp`)
+- [x] พัฒนา Download Queue Manager สำหรับจัดการคิวเพลงต่อเนื่องและสถานะ Queued / Downloading / Completed / Failed
+- [x] เชื่อมขั้นตอนรับข้อมูล ประมวลผล Metadata และบันทึกไฟล์
+- [x] ผสานการทำงานกับ Output Validator ก่อนแจ้งงานสำเร็จ
+- [ ] ทดสอบการทำงานกับไฟล์และอุปกรณ์จริง (ทดสอบกับไฟล์เสียง `.m4a` และ `ffmpeg.exe` จริงแล้วใน `TC-024`; ส่วนการทดสอบกับ Micro SD Card จริงและเครื่องเล่น SNOWSKY ECHO DAP จริง รอทดสอบด้วยมือใน Phase 5)
 
-### Phase 4 — พัฒนา Frontend
+### Phase 4 — พัฒนา Frontend (ดำเนินการแล้ว — ดูบันทึกผลใน [`PROJECT_PROGRESS.md`](file:///e:/Doc/Code/randombullshit/PLADAZV2/Doc/PROJECT_PROGRESS.md))
 
-- [ ] ศึกษาเอกสาร [`PLADAZ — Design Direction & Handoff.md`](file:///e:/Doc/Code/randombullshit/PLADAZV2/PLADAZ%20—%20Design%20Direction%20&%20Handoff.md) และ [`PLADAZ UI Mockup.html`](file:///e:/Doc/Code/randombullshit/PLADAZV2/PLADAZ%20UI%20Mockup.html) แล้วออกแบบและพัฒนา Web UI ภาษาอังกฤษ (English) ตามข้อกำหนดการนำ Mockup ไปใช้ใน DEC-028
-- [ ] ตั้งค่า build ไฟล์ Tailwind CSS ล่วงหน้าและแพ็กรวมกับ Web Assets โดยไม่พึ่ง CDN (DEC-029)
-- [ ] เชื่อมโยง UI กับ Python Backend ผ่าน Native JS Bridge (`window.pywebview.api`)
-- [ ] แสดงหน้าต่าง Personal Use Disclaimer ในการเปิดใช้งานครั้งแรก และรองรับการวางลิงก์เพลงเดี่ยว / Playlist / อัลบั้ม
-- [ ] แสดงสถานะงาน Download Queue (Queued, Downloading, Completed, Failed) แบบ Real-time
-- [ ] แสดงการแจ้งเตือน SD Card, Conflict Prompt Dialog และข้อผิดพลาดอย่างชัดเจน
-- [ ] ทดสอบการเลือกโฟลเดอร์และปลายทางจัดเก็บ
-- [ ] ทดสอบการแพ็กเกจด้วย PyInstaller เป็น `.exe` (Semantic Versioning เริ่มที่ `v1.0.0`)
+- [x] ศึกษาเอกสาร [`PLADAZ — Design Direction & Handoff.md`](file:///e:/Doc/Code/randombullshit/PLADAZV2/Doc/PLADAZ%20—%20Design%20Direction%20&%20Handoff.md) และ [`PLADAZ UI Mockup(2).html`](file:///e:/Doc/Code/randombullshit/PLADAZV2/Doc/PLADAZ%20UI%20Mockup(2).html) แล้วออกแบบและพัฒนา Web UI ภาษาอังกฤษ (English) ครบ 19 บอร์ดที่อนุมัติ (บอร์ด 01–11, 13–20; ตัดบอร์ด 12 `Picker.dc.html` ออกตาม DEC-048)
+- [x] ตั้งค่า build ไฟล์ Tailwind CSS ล่วงหน้า (`ui/app.built.css`) และแพ็กฟอนต์ `.woff2` ทั้ง 4 ตระกูล (OFL-1.1) รวมกับ Web Assets โดยไม่พึ่ง CDN (DEC-029, DEC-045)
+- [x] เชื่อมโยง UI กับ Python Backend ผ่าน Native JS Bridge (`window.pywebview.api` และ `window.pladazDispatchEvent` ครบ 6 Events)
+- [x] แสดงหน้าต่าง Personal Use Disclaimer ในการเปิดใช้งานครั้งแรก (บอร์ด 04) และรองรับการวางลิงก์เพลงเดี่ยว / Playlist / อัลบั้ม
+- [x] แสดงสถานะงาน Download Queue (Queued, Downloading, Completed, Failed) และ 10 Stage ย่อยแบบ Real-time
+- [x] แสดงการแจ้งเตือน SD Card, Conflict Prompt Dialog (บอร์ด 05), Cancel Confirmation (บอร์ด 11 — DEC-049) และข้อผิดพลาดอย่างชัดเจน
+- [x] ทดสอบการเลือกโฟลเดอร์และปลายทางจัดเก็บ (`scan_storage_devices`, `browse_destination_folder`)
+- [x] ทดสอบการแพ็กเกจด้วย PyInstaller โหมด `one-folder` (`--onedir`: `dist/PLADAZ/PLADAZ.exe` พร้อม `yt-dlp.exe` วางแยกข้าง `.exe` ตาม DEC-038, DEC-046)
 
 ### Phase 5 — ตรวจสอบและเตรียมใช้งาน
 
@@ -597,6 +597,12 @@ AI ต้องปฏิบัติตามกฎต่อไปนี้ท�
 | DEC-042 | กำหนดการควบคุมคิวแบบแมนนวล (OD-04, IR-017) | ยืนยันแล้ว | คิวเริ่มต้นที่สถานะ Queued และรอกด Start จึงเริ่มประมวลผล พร้อมมีคำสั่ง Cancel (ยกเลิกงาน) และ Resume (เดินคิวต่อหลังการ์ดพร้อม) งานที่ถูก Cancel นับเป็น `Failed` ด้วยรหัส `ERR_TASK_CANCELLED` (ไม่เพิ่มสถานะที่ 5) |
 | DEC-043 | กำหนดการรับมือข้อจำกัด Windows MAX_PATH (OD-06, TBA-012) | ยืนยันแล้ว | ยอมรับกรณีสุดโต่งที่เส้นทางยาวเกินเพดาน 259 อักขระ โดยตรวจจับหลังสร้างเส้นทางเต็มและปรับงานเป็น `Failed` ด้วยรหัส `ERR_PATH_TOO_LONG` ทันทีโดยไม่ดาวน์โหลดเสียง |
 | DEC-044 | กำหนดขอบเขตของ Apply to all ใน Conflict Prompt Dialog (TBA-013, DEC-019) | ยืนยันแล้ว | `Apply to all in this album` = ทุกไฟล์ที่ซ้ำและมีโฟลเดอร์ปลายทาง (`<Album Artist>/<Album>` หลัง sanitize) เดียวกัน; `Apply to all in queue` = ทุกงานในคิวรอบการรันนี้ รวมงานที่เพิ่มภายหลัง จนกว่าคิวจะว่าง (ไม่ข้ามรอบการรัน/ไม่บันทึกข้ามการปิดแอป) |
+| DEC-045 | กำหนดการฝังฟอนต์ออฟไลน์และเครื่องมือบิลด์ Frontend ใน Phase 4 (ขยายความ DEC-017, DEC-029) | ยืนยันแล้ว | แพ็กไฟล์ฟอนต์ `.woff2` ทั้ง 4 ตระกูล (`Dela Gothic One`, `Silkscreen`, `IBM Plex Sans Thai`, `IBM Plex Mono` ภายใต้สัญญาอนุญาต OFL-1.1) ไว้ใน `ui/fonts/` คอมไพล์ CSS ล่วงหน้าด้วย Tailwind CLI (`ui_src/input.css` → `ui/app.built.css`) และใช้ Vanilla JS โดยไม่พึ่งพา CDN ภายนอก |
+| DEC-046 | กำหนดโหมดการแพ็กเกจ PyInstaller (ขยายความ DEC-018, DEC-038) | ยืนยันแล้ว | ใช้โหมด **`one-folder` (`--onedir`)** ได้โฟลเดอร์ `dist/PLADAZ/PLADAZ.exe` พร้อม `_internal/` (รวม `ui/`, ฟอนต์ และ `bin/ffmpeg.exe`) และวางไฟล์ `yt-dlp.exe` แยกไว้ข้าง `PLADAZ.exe` เพื่อให้เปิดแอปเร็วและอัปเดต `yt-dlp.exe` แยกได้สะดวก |
+| DEC-047 | กำหนดขนาดหน้าต่างเริ่มต้นและจุดตัด Responsive ของ App Shell | ยืนยันแล้ว | ขนาดหน้าต่างเริ่มต้น `1280×820` px, ขนาดขั้นต่ำ `min_size=(380, 600)` px พร้อมจุดตัด Responsive ที่ `1024px` และ `640px` ตามบอร์ด 19 (`19_Narrow.dc.html`) |
+| DEC-048 | ไม่อนุมัติฟีเจอร์เลือกเฉพาะบางเพลงก่อนเข้าคิว (ตัดบอร์ด 12 `12_Picker.dc.html`) | ยืนยันแล้ว | เมื่อผู้ใช้วางลิงก์ Playlist หรือ Album ให้แตกและเพิ่มทุกเพลงเข้าคิวโดยตรงตามขอบเขตเดิมใน DEC-025 (ไม่สร้างหน้าต่าง Choose Tracks บอร์ด 12) |
+| DEC-049 | กำหนดพฤติกรรมเมื่อกดยืนยัน Cancel งานที่กำลังดาวน์โหลด (บอร์ด 11 `11_CancelConfirm.dc.html`, ขยายความ DEC-042) | ยืนยันแล้ว | เมื่อผู้ใช้ยืนยัน Cancel งานที่กำลัง `Downloading` ระบบจะปรับงานนั้นเป็น `Failed` (`ERR_TASK_CANCELLED`) ลบไฟล์ใน Temp และหยุดคิวชั่วคราว (`queue_halted = True`) โดยงานที่เหลือคงสถานะ `Queued` รอให้ผู้ใช้กด `Resume` |
+| DEC-050 | ยืนยันรายการตั้งค่าและเมธอดเสริมของ BridgeAPI สำหรับบอร์ด 01, 04, 06, 07, 09, 15, 16, 17, 20 | ยืนยันแล้ว | ยืนยันคีย์ `"require_album_art"` และ `"musicbrainz_user_agent"` ใน `config.json` (บอร์ด 06), ปิดปุ่ม Start Queue ชั่วคราวขณะกำลังอัปเดต `yt-dlp.exe` (บอร์ด 16), แสดง Third-Party Notices ในหน้า About (บอร์ด 20), และเพิ่มเมธอด `check_ytdlp_status`, `locate_ytdlp_file`, `clear_history`, `get_recent_logs`, `open_folder`, `quit_app` ใน `BridgeAPI` |
 
 ### 13.2 Change Log
 
@@ -616,6 +622,8 @@ AI ต้องปฏิบัติตามกฎต่อไปนี้ท�
 | 2.1 | ปรับปรุงตามการตัดสินใจ Open Decisions (OD-01 ถึง OD-04, OD-06 ถึง OD-09): เพิ่มกฎ Sanitizer เข้มงวดขึ้น (DEC-037), แยก yt-dlp.exe วางข้าง .exe (DEC-038), กำหนด Skip เอางานออกจากคิว (DEC-039), Overwrite คัดลอกชื่อชั่วคราวก่อนแทนที่ (DEC-040), เฝ้าดูการ์ดเป็นระยะ (DEC-041), คิวรอกด Start พร้อม Cancel/Resume (DEC-042), รับมือ MAX_PATH ด้วย ERR_PATH_TOO_LONG (DEC-043), เพิ่ม TBA-027 สำหรับ bitrate ของ fallback encode, ปรับแก้ TC-013, TC-016, TC-019, TC-025 และเพิ่ม TC-027 ถึง TC-032 |
 | 2.2 | ปิดประเด็นค้างจาก 2.1 และตรวจความสอดคล้องกับ SYSTEM_DESIGN: งานที่ Cancel เป็น `Failed` รหัส `ERR_TASK_CANCELLED` (ปรับ DEC-042, TC-016), กำหนดขอบเขต Apply to all (DEC-044, ปรับ 6.2 ข้อ 7 และ TC-013, เพิ่ม TC-033), ตัดข้อความ "คมชัดและเสถียรที่สุด/รวดเร็วที่สุด" ใน TBA-009 และ 7.2 ที่ไม่มีหลักฐานทดสอบรองรับ, ปรับถ้อยคำช่อง Phase 0 เรื่องความเข้ากันได้ให้ตรงกับสถานะ "ยืนยันจากสเปก" |
 | 2.3 | บันทึกความคืบหน้าการเสร็จสิ้น Phase 2 (สร้างแกนระบบ Python Backend และชุดทดสอบ `pytest` 34 รายการผ่านทั้งหมด) พร้อมเชื่อมโยงเอกสาร [`PROJECT_PROGRESS.md`](file:///e:/Doc/Code/randombullshit/PLADAZV2/Doc/PROJECT_PROGRESS.md) |
+| 2.4 | บันทึกความคืบหน้าการเสร็จสิ้น Phase 3 (พัฒนา `DownloadSourceAdapter`, `AudioProcessingService`, `HttpExternalMetadataFetcher`, `DownloadQueueManager`, ตัวเฝ้าดู SD Card เบื้องหลัง, `EventDispatcher`, `dto.py`, และ `BridgeAPI` พร้อมชุดทดสอบ `pytest` รวม 49 รายการผ่านทั้งหมด) |
+| 2.5 | บันทึกการตัดสินใจก่อนเริ่มงานและผลการเสร็จสิ้น Phase 4 (เพิ่ม DEC-045 ถึง DEC-050, พัฒนา `paths.py`, `main.py`, `ui/js/bridge.js`, `ui/js/app.js`, `ui/index.html` ครบ 19 บอร์ดที่อนุมัติโดยตัดบอร์ด 12 ออก, แพ็กฟอนต์ `.woff2` ออฟไลน์และ `ui/app.built.css`, สร้างแพ็กเกจ PyInstaller `--onedir` ใน `pladaz.spec`, และขยายชุดทดสอบ `pytest` เป็น 54 รายการผ่านทั้งหมด) |
 
 ---
 

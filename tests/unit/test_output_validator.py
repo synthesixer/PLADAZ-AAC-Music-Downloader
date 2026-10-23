@@ -2,6 +2,9 @@
 
 from pathlib import Path
 from mutagen.mp4 import MP4, MP4Cover
+import pytest
+
+pytestmark = pytest.mark.unit
 
 from pladaz.domain.errors import ErrorCode
 from pladaz.domain.models import TrackMetadata

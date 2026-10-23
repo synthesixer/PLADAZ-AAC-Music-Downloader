@@ -12,11 +12,13 @@ dependencies = [
     "mutagen>=1.47.0",
     "Pillow>=10.0.0",
     "psutil>=5.9.0",
+    "pywebview>=5.0.0",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0.0",
+    "pyinstaller>=6.0.0",
 ]
 
 [tool.setuptools.packages.find]
@@ -25,5 +27,13 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-addopts = "-v"
+addopts = "-v -m 'not network'"
+markers = [
+    "unit: Fast isolated unit tests without network or external binaries",
+    "integration: Cross-module service integration tests",
+    "fs: File system, storage probe, and destination path tests",
+    "e2e: End-to-end workflow tests through BridgeAPI",
+    "network: Tests that require active internet access (excluded by default)",
+    "real_binaries: Tests that invoke external executables (ffmpeg.exe, yt-dlp.exe)",
+]
 

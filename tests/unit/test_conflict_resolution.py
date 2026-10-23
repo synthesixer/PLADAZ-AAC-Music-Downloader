@@ -5,6 +5,10 @@ import shutil
 from threading import Event, Thread
 from typing import Any, Optional
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 from pladaz.bridge.events import EventDispatcher
 from pladaz.domain.enums import (
     AudioProcessMode,

@@ -5,6 +5,9 @@ import shutil
 from threading import Event
 import time
 from typing import Any, Optional
+import pytest
+
+pytestmark = pytest.mark.integration
 
 from pladaz.bridge.api import BridgeAPI
 from pladaz.bridge.events import EventDispatcher

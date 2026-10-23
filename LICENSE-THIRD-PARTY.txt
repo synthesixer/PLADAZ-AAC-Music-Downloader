@@ -1,0 +1,55 @@
+========================================================================
+PLADAZ — Third-Party Notices & Licenses
+========================================================================
+
+PLADAZ utilizes the following third-party software, binaries, and fonts.
+Their respective licenses and copyright notices are detailed below:
+
+1. yt-dlp
+   - Website: https://github.com/yt-dlp/yt-dlp
+   - License: The Unlicense (Public Domain dedication)
+   - Usage: External standalone executable placed alongside PLADAZ.exe.
+
+2. FFmpeg (gyan.dev release_full build)
+   - Website: https://ffmpeg.org / https://www.gyan.dev/ffmpeg/builds/
+   - License: GNU General Public License version 3 (GPLv3) for the bundled
+     `release_full` build (`--enable-gpl --enable-version3`).
+   - Usage: Audio extraction, AAC-LC remuxing, and re-encoding binary (`_internal/bin/ffmpeg.exe`).
+
+3. Mutagen
+   - Website: https://github.com/quodlibet/mutagen
+   - License: GNU General Public License version 2 or later (GPLv2+)
+   - Usage: MP4/M4A atom tagging and metadata parsing (`_internal/` Python library).
+
+IMPORTANT GPL COMPLIANCE NOTE FOR DISTRIBUTION:
+- Personal / Private Use: Running or building PLADAZ privately on your own machine
+  does not trigger GPL source distribution obligations.
+- Redistribution to Third Parties: Because the packaged build bundles `mutagen`
+  (GPLv2+) and the `gyan.dev` `release_full` build of `ffmpeg.exe`
+  (GPLv3), distributing the compiled `dist/PLADAZ` package to others requires
+  complying with the GNU GPL (including providing the complete corresponding source
+  code and GPL license texts), OR replacing the bundled FFmpeg binary with an
+  LGPL-only build if separate binary terms are desired.
+
+4. Pillow (PIL Fork)
+   - Website: https://python-pillow.org
+   - License: HPND (Historical Permission Notice and Disclaimer)
+   - Usage: 1:1 aspect ratio square cropping and 800x800 JPEG image processing.
+
+5. psutil
+   - Website: https://github.com/giampaolo/psutil
+   - License: BSD 3-Clause License
+   - Usage: Storage drive detection and disk space probing.
+
+6. pywebview
+   - Website: https://pywebview.flowrl.com
+   - License: BSD 3-Clause License
+   - Usage: Windows App Shell wrapping Microsoft Edge WebView2.
+
+7. Fonts (SIL Open Font License 1.1 - OFL-1.1):
+   - Dela Gothic One (Copyright 2020 The Dela Gothic Project Authors)
+   - Silkscreen (Copyright 2001 Jason Kottke)
+   - IBM Plex Sans Thai (Copyright 2017 IBM Corp.)
+   - IBM Plex Mono (Copyright 2017 IBM Corp.)
+   - Full OFL-1.1 license text available at: https://scripts.sil.org/OFL
+

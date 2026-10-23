@@ -1,0 +1,34 @@
+# Build & Dist output (Never commit compiled binaries or PyInstaller bundles)
+dist/
+build/
+*.spec.bak
+
+# Binaries & Bundled tools
+*.exe
+bin/
+
+# Python Virtual Environment & Bytecode
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Node.js
+node_modules/
+
+# Application runtime data & logs
+config.json
+history.json
+logs/
+temp/
+*.corrupt*
+*.pladaz-tmp
+
+# IDE & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
