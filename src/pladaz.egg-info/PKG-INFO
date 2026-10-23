@@ -1,0 +1,14 @@
+Metadata-Version: 2.4
+Name: pladaz
+Version: 1.0.0
+Summary: PLADAZ - YouTube / YouTube Music to M4A (AAC-LC) Downloader & Organizer for SNOWSKY ECHO DAP
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: mutagen>=1.47.0
+Requires-Dist: Pillow>=10.0.0
+Requires-Dist: psutil>=5.9.0
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0.0; extra == "dev"
+
+# PLADAZV2
+
