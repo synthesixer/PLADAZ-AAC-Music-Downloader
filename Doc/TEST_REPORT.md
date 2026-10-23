@@ -152,12 +152,18 @@
 - `covr`: `MP4Cover.FORMAT_JPEG` ขนาด `(800, 800)` px 1:1 Aspect Ratio
 
 ### 5.4 ค่าแฮชและขนาดของไฟล์แจกจ่ายล่าสุด (Release Binaries SHA-256)
-- **`dist\PLADAZ\PLADAZ.exe`**:
-  - ขนาด: `5,897,603` ไบต์ (`~5.90 MB`)
-  - SHA-256: `8036F51114FF7F0B8683695A64E912F5ECEAC94DFE8E54A30F53B3AB71C7DA8B`
-- **`dist\PLADAZ\_internal\bin\yt-dlp.exe`**:
+- **ที่มาของ build:** commit `ba20fd7` (working tree สะอาด) สั่ง `.\venv\Scripts\pyinstaller.exe --noconfirm --clean pladaz.spec` ด้วย PyInstaller 6.22.3 วันที่ 2026-10-24 แล้วคัดลอก `README.md` และ `LICENSE-THIRD-PARTY.txt` เข้าโฟลเดอร์ (spec ไม่ได้คัดลอกให้)
+- **ตรวจหลัง build:** ไฟล์ใน `_internal\ui\` (`index.html`, `js/app.js`, `js/bridge.js`, `app.built.css`) ตรงกับต้นฉบับใน repo; `PLADAZ.exe --smoke-test` คืน exit code `0` (`PLADAZ_SMOKE_OK v1.0.0`) จากนั้นลบ `config.json`, `history.json`, `logs\`, `temp\` ที่ smoke test สร้างออก เพื่อให้แอปสร้างใหม่ตอนเปิดครั้งแรก
+- **`dist\PLADAZ\PLADAZ.exe`** (รวม Python code ใน PYZ archive):
+  - ขนาด: `5,900,807` ไบต์ (`~5.90 MB`)
+  - SHA-256: `8FA05A7DF0FB8A825863B5A74D95543D12BD37E9606053F70EB66E80CC9F5323`
+- **`dist\PLADAZ\_internal\bin\yt-dlp.exe`** (2026.10.21):
   - ขนาด: `17,880,111` ไบต์ (`~17.88 MB`)
   - SHA-256: `33121D192D706E62F684A06F80918E3F3A8BA52AC3A65213B6951C39C7D9F555`
+- **`dist\PLADAZ\_internal\bin\ffmpeg.exe`** (9.0.2 gyan.dev full_build):
+  - ขนาด: `227,823,104` ไบต์ (`~227.8 MB`)
+  - SHA-256: `589E50B766D251AFDF181DD664D40BD94407E200B019989FD7468C7D118A28D0`
+- **ข้อจำกัด:** ค่าแฮชเหล่านี้ไม่ครอบคลุมไฟล์อื่นใน `_internal\` (เช่น UI assets, DLL) และ build นี้ยังไม่ได้ทดสอบบน Windows สะอาด การ์ดจริง หรือเครื่อง ECHO
 
 ---
 

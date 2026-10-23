@@ -87,7 +87,7 @@
    - ปรับแต่ง `DownloadSourceAdapter.update_ytdlp()` ให้ทำการ in-place update ตรงตำแหน่งติดตั้ง binary ผ่าน atomic swap (`os.replace`)
    - ต่อสาย `TemporaryExactMetadataMatcher` และ `HttpExternalMetadataFetcher` เข้ากับ `MetadataAlbumArtService` ใน `main.py` พร้อมเพิ่ม HTTP fallback ดาวน์โหลดภาพปกจาก YouTube stream `thumbnails` ทำให้ M4A มีภาพปก 800×800 JPEG ฝังใน atom `covr` เสมอ
    - สร้างไฟล์ `.gitignore` เพื่อป้องกันการ commit binaries ขนาดใหญ่ (`*.exe`, `dist/`, `build/`) เข้า Git โดยอาศัย GitHub Releases ในการแจกจ่าย
-   - บิลด์ `dist\PLADAZ\PLADAZ.exe` ล่าสุดด้วย PyInstaller: ขนาด `5,897,603` ไบต์, SHA-256: `8036F51114FF7F0B8683695A64E912F5ECEAC94DFE8E54A30F53B3AB71C7DA8B`
+   - บิลด์ `dist\PLADAZ\PLADAZ.exe` ล่าสุดด้วย PyInstaller (จาก commit `ba20fd7`, 2026-10-24, smoke test exit code `0`): ขนาด `5,900,807` ไบต์, SHA-256: `8FA05A7DF0FB8A825863B5A74D95543D12BD37E9606053F70EB66E80CC9F5323` (รายละเอียดและแฮชของ `yt-dlp.exe` / `ffmpeg.exe` ใน `TEST_REPORT.md` หัวข้อ 5.4)
 
 ---
 
