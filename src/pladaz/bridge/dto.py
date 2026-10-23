@@ -101,5 +101,6 @@ def history_entry_to_dto(entry: HistoryEntry) -> dict[str, Any]:
         "source_url": entry.source_url,
         "warnings": list(entry.warnings),
         "error_code": entry.error_code,
+        "has_cover": entry.has_cover,
     }
 

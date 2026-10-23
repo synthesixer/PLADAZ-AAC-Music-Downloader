@@ -234,12 +234,11 @@ class HttpExternalMetadataFetcher(ExternalMetadataFetcherProtocol):
         logger: Optional[PladazLogger] = None,
         clock_fn: Callable[[], float] = time.monotonic,
         sleep_fn: Callable[[float], None] = time.sleep,
+        # Called on every MusicBrainz query so a User-Agent saved in Settings applies without a restart
+        musicbrainz_user_agent_provider: Optional[Callable[[], Optional[str]]] = None,
     ) -> None:
-        self.musicbrainz_user_agent = (
-            musicbrainz_user_agent.strip()
-            if musicbrainz_user_agent and musicbrainz_user_agent.strip()
-            else None
-        )
+        self._static_user_agent = musicbrainz_user_agent
+        self._user_agent_provider = musicbrainz_user_agent_provider
         self.timeout_sec = timeout_sec
         self.mb_min_interval_sec = mb_min_interval_sec
         self._http_get_json: HttpGetJsonFn = http_get_json or _default_http_get_json
@@ -249,6 +248,18 @@ class HttpExternalMetadataFetcher(ExternalMetadataFetcherProtocol):
         self._sleep_fn = sleep_fn
         self._mb_lock = Lock()
         self._last_mb_request_ts: Optional[float] = None
+
+    @property
+    def musicbrainz_user_agent(self) -> Optional[str]:
+        """Current User-Agent (TBA-026: user-supplied only), or None when not configured."""
+        raw = (
+            self._user_agent_provider()
+            if self._user_agent_provider is not None
+            else self._static_user_agent
+        )
+        if isinstance(raw, str) and raw.strip():
+            return raw.strip()
+        return None
 
     def _wait_musicbrainz_rate_limit(self) -> None:
         """Ensure at least `mb_min_interval_sec` (1.0s) between MusicBrainz API calls (Plan 7.2)."""
@@ -281,7 +292,8 @@ class HttpExternalMetadataFetcher(ExternalMetadataFetcherProtocol):
 
     def query_musicbrainz(self, title: str, artist: str) -> list[ExternalMetadata]:
         """Query MusicBrainz API enforcing 1 req/s rate limit and user-configured User-Agent (TBA-026)."""
-        if not self.musicbrainz_user_agent:
+        user_agent = self.musicbrainz_user_agent
+        if not user_agent:
             if self._logger:
                 self._logger.warning(
                     component="HttpExternalMetadataFetcher",
@@ -296,7 +308,7 @@ class HttpExternalMetadataFetcher(ExternalMetadataFetcherProtocol):
         params = urlencode({"query": lucene_query, "fmt": "json", "limit": "5"})
         url = f"{MUSICBRAINZ_RECORDING_URL}?{params}"
         headers = {
-            "User-Agent": self.musicbrainz_user_agent,
+            "User-Agent": user_agent,
             "Accept": "application/json",
         }
         payload = self._http_get_json(url, headers, self.timeout_sec)
@@ -323,7 +335,8 @@ class HttpExternalMetadataFetcher(ExternalMetadataFetcherProtocol):
                     message=f"iTunes Search API request failed: {exc}",
                 )
 
-        if self.musicbrainz_user_agent:
+        mb_enabled = self.musicbrainz_user_agent is not None
+        if mb_enabled:
             try:
                 candidates.extend(self.query_musicbrainz(title, artist))
             except Exception as exc:
@@ -337,7 +350,7 @@ class HttpExternalMetadataFetcher(ExternalMetadataFetcherProtocol):
         # If iTunes failed and either MusicBrainz was not configured or also failed, propagate exception
         # so MetadataAlbumArtService records WARN_METADATA_ENRICH_UNAVAILABLE
         if itunes_error is not None and (
-            not self.musicbrainz_user_agent or mb_error is not None
+            not mb_enabled or mb_error is not None
         ):
             raise itunes_error
 

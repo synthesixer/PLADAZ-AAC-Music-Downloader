@@ -1,4 +1,6 @@
-# Install Git Pre-Push Hook for Automated Regression Testing (IR-021, TC-021)
+# Install Git hooks for Automated Regression Testing (IR-021, TC-021)
+# - pre-commit: runs the regression suite on every commit, so it works without a git remote
+# - pre-push:   runs it again before pushing, when a remote exists
 
 $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -10,22 +12,25 @@ if (-not (Test-Path $GitHooksDir)) {
     exit 1
 }
 
-$HookPath = Join-Path $GitHooksDir "pre-push"
-$HookContent = @'
+function New-RegressionHook([string]$HookName, [string]$Action) {
+    $HookContent = @"
 #!/bin/sh
 # PLADAZ Automated Regression Hook (IR-021 / TC-021)
-echo "Running PLADAZ Automated Regression Suite before push..."
+echo "Running PLADAZ Automated Regression Suite before $Action..."
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "./scripts/run_tests.ps1"
-RESULT=$?
-if [ $RESULT -ne 0 ]; then
-    echo "Regression tests failed! Push aborted."
+RESULT=`$?
+if [ `$RESULT -ne 0 ]; then
+    echo "Regression tests failed! $Action aborted."
     exit 1
 fi
 exit 0
-'@
+"@
+    $HookPath = Join-Path $GitHooksDir $HookName
+    [System.IO.File]::WriteAllText($HookPath, $HookContent.Replace("`r`n", "`n"))
+    Write-Host "Installed git $HookName hook at: $HookPath" -ForegroundColor Green
+}
 
-[System.IO.File]::WriteAllText($HookPath, $HookContent.Replace("`r`n", "`n"))
+New-RegressionHook "pre-commit" "commit"
+New-RegressionHook "pre-push" "push"
 
-Write-Host "Successfully installed git pre-push hook at: $HookPath" -ForegroundColor Green
-Write-Host "Regression suite will now run automatically before every git push." -ForegroundColor Cyan
-
+Write-Host "Regression suite will now run automatically before every git commit and push." -ForegroundColor Cyan

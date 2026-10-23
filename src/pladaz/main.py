@@ -9,10 +9,12 @@ from typing import Any, Optional
 from pladaz import __version__
 from pladaz.bridge.api import BridgeAPI
 from pladaz.bridge.events import EventDispatcher
-from pladaz.domain.enums import TaskStatus
 from pladaz.paths import AppPaths, resolve_app_paths
 from pladaz.services.audio_processor import AudioProcessingService
-from pladaz.services.config_store import ConfigHistoryStore
+from pladaz.services.config_store import (
+    CONFIG_KEY_MUSICBRAINZ_USER_AGENT,
+    ConfigHistoryStore,
+)
 from pladaz.services.folder_organizer import SmartFolderOrganizer
 from pladaz.services.logger import PladazLogger
 from pladaz.services.metadata_matcher import (
@@ -47,13 +49,18 @@ class AppContext:
     queue_manager: DownloadQueueManager
     bridge: BridgeAPI
 
+    _closed: bool = False
+
     def shutdown(self) -> None:
-        """Cancel any active download, clean up temp directory, and close log handlers."""
+        """Stop the queue (discard Queued tasks, cancel and wait for the active one), clean Temp, and close logs.
+
+        Safe to call more than once: the window-closed hook and main()'s finally both call it.
+        """
+        if self._closed:
+            return
+        self._closed = True
         try:
-            for task in self.queue_manager.get_tasks():
-                if task.status in (TaskStatus.DOWNLOADING, TaskStatus.QUEUED):
-                    self.queue_manager.cancel_task(task.task_id)
-            self.queue_manager.cleanup_all_temp()
+            self.queue_manager.shutdown()
         except Exception:
             pass
         try:
@@ -102,8 +109,11 @@ def create_app_context(paths: Optional[AppPaths] = None) -> AppContext:
     sd_card_manager = SDCardManager(logger=logger)
     folder_organizer = SmartFolderOrganizer()
     metadata_matcher = TemporaryExactMetadataMatcher()
+    # Read the User-Agent from config.json on every MusicBrainz call so a value saved in Settings applies without a restart
     external_fetcher = HttpExternalMetadataFetcher(
-        musicbrainz_user_agent=cfg.get("musicbrainz_user_agent"),
+        musicbrainz_user_agent_provider=lambda: config_store.load_config().get(
+            CONFIG_KEY_MUSICBRAINZ_USER_AGENT
+        ),
         logger=logger,
     )
     metadata_service = MetadataAlbumArtService(

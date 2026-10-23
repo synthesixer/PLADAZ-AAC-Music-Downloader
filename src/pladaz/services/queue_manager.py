@@ -257,6 +257,35 @@ class DownloadQueueManager:
         self._events.emit_sdcard_status_changed(status, alert=None)
         self.start_queue(background=background)
 
+    def shutdown(self, timeout: float = 10.0) -> None:
+        """Stop the queue for app exit (owner decision 2026-10-24, DEC-051).
+
+        Queued tasks are discarded without history entries, the active task is cancelled (and recorded
+        as Failed with ERR_TASK_CANCELLED by the worker), and the worker thread is joined so no copy to
+        the SD card is cut off mid-write. Temp is cleaned afterwards.
+        """
+        with self._lock:
+            self._queue_halted = True
+            for t in self._tasks:
+                if t.status == TaskStatus.QUEUED:
+                    self._cancel_events.pop(t.task_id, None)
+                elif t.status == TaskStatus.DOWNLOADING:
+                    self._cancel_events.setdefault(t.task_id, Event()).set()
+                    conflict_ev = self._conflict_events.get(t.task_id)
+                    if conflict_ev:
+                        conflict_ev.set()
+            self._tasks = [t for t in self._tasks if t.status != TaskStatus.QUEUED]
+            worker = self._worker_thread
+
+        if worker is not None and worker.is_alive():
+            worker.join(timeout=timeout)
+            if worker.is_alive() and self._logger:
+                self._logger.warning(
+                    component="DownloadQueueManager",
+                    message=f"Queue worker did not stop within {timeout}s during shutdown.",
+                )
+        self.cleanup_all_temp()
+
     def wait_for_idle(self, timeout: float = 30.0) -> bool:
         """Wait until the sequential worker finishes or halts."""
         return self._idle_event.wait(timeout=timeout)
@@ -369,9 +398,9 @@ class DownloadQueueManager:
         )
 
         with self._lock:
-            task_exists = any(t.task_id == task_id for t in self._tasks)
-            has_event = task_id in self._conflict_events
-            if not task_exists and not has_event:
+            # Only answer a prompt that is actually waiting; otherwise a stray call could store an
+            # Apply-to-all rule for the whole queue run.
+            if task_id not in self._conflict_events:
                 return False
 
             self._conflict_resolutions[task_id] = resolved_action
@@ -450,6 +479,7 @@ class DownloadQueueManager:
             source_url=task.entry_url,
             warnings=list(task.warnings),
             error_code=task.error.code if task.error else None,
+            has_cover=bool(meta.cover_jpeg) if meta else None,
         )
         try:
             self._config_store.append_history(entry)
@@ -458,8 +488,18 @@ class DownloadQueueManager:
                 self._logger.error(
                     component="DownloadQueueManager",
                     message=f"Failed to append history entry: {exc}",
+                    error_code=ErrorCode.ERR_HISTORY_WRITE_FAILED,
                     task_id=task.task_id,
                 )
+            self._events.emit_system_error(
+                build_safe_structured_error(
+                    code=ErrorCode.ERR_HISTORY_WRITE_FAILED,
+                    message_en="Could not save this track to history.json. The track itself was not affected.",
+                    recoverable=True,
+                    task_id=task.task_id,
+                    details=str(exc),
+                )
+            )
 
     def _start_sd_watcher(
         self,

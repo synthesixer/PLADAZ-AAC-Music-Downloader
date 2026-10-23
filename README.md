@@ -97,7 +97,13 @@ dist/PLADAZ/
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\run_tests.ps1
 ```
-*(Runs unit, integration, and offline E2E suites with 58 passed tests, 1 skipped live network test, exiting with non-zero on failure).*
+*(Runs unit, integration, and offline E2E suites with 71 passed tests (the live-network test is excluded), exiting with non-zero on failure).*
+
+### Run It Automatically on Every Commit
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install_git_hooks.ps1
+```
+*(Installs git `pre-commit` and `pre-push` hooks that run `run_tests.ps1` and block the commit or push on failure. Hooks live in `.git/hooks/`, which git does not version, so run this once in every clone.)*
 
 ### Verify Files on Micro SD Card (Read-Only)
 ```powershell

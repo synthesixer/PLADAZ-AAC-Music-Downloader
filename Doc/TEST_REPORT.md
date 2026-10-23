@@ -36,7 +36,7 @@
 
 ### 2.1 สรุปจำนวนการทดสอบอัตโนมัติ (`pytest`)
 - **จำนวนการทดสอบที่รวบรวมได้ทั้งหมด (Collected):** **59 รายการ** (ใน 14 ไฟล์ทดสอบ)
-- **ผลการรันชุดทดสอบออฟไลน์ทั้งหมด (`.\venv\Scripts\python.exe -m pytest -v -m "not network"`):** **`58 passed`** (`0 failed`)
+- **ผลการรันชุดทดสอบออฟไลน์ทั้งหมด (`.\venv\Scripts\python.exe -m pytest -v -m "not network"`):** **`71 passed`**, `1 deselected` (`0 failed`, วันที่ 2026-10-24 หลังแก้ตามรายงานตรวจสอบ รวม `tests/integration/test_audit_fixes.py` 13 รายการ)
   - **Unit Tests (`-m "unit"`):** **36 passed** (`tests/unit/` 34 รายการ + `tests/test_frontend_js.py` 2 รายการ)
   - **Integration Tests (`-m "integration and not e2e"`):** **21 passed** (`tests/integration/` 15 รายการ + `tests/test_phase4_bridge_and_shell.py` 6 รายการ)
   - **End-to-End Tests (`-m "e2e"`):** **2 รายการ**
@@ -76,7 +76,7 @@
 | **TC-018** | การทำงานของ Download Queue (Sequential Worker) | IR-017, DEC-009, DEC-023 | Integration | อัตโนมัติ | `tests/integration/test_queue_worker.py`, `tests/test_frontend_js.py` | **Pass** | `test_tc018_download_queue_sequential_state_transitions` (`Queued` → `Downloading` → `Completed`/`Failed`), อัปเดต DOM เฉพาะแถวที่เปลี่ยน และนับสรุปเฉพาะงานในรอบปัจจุบัน | 2026-10-24 |
 | **TC-019** | การตรวจจับการ์ดและการถอด Micro SD Card กลางคัน | IR-019, DEC-011, DEC-041 | Integration / Device | อัตโนมัติ (จำลอง) + ผู้ใช้ (การ์ดจริง) | `tests/integration/test_queue_worker.py`, `tests/integration/test_sd_card_manager.py` | **Not Run** | การทดสอบจำลองอัตโนมัติผ่าน (`test_tc019_...` คืน `ERR_SDCARD_DISCONNECTED` และหยุดคิวทันที); สถานะรวมคงเป็น `Not Run` รอการทดสอบดึงการ์ดจริงตาม Checklist E | 2026-10-24 |
 | **TC-020** | การตรวจสอบความถูกต้องของไฟล์ด้วย `OutputValidator` | IR-020, DEC-012, DEC-030 | Unit | อัตโนมัติ | `tests/unit/test_output_validator.py` | **Pass** | `test_tc020_output_validator_rejects_corrupt_non_aac_and_missing_title_files` ปฏิเสธไฟล์ไม่สมบูรณ์ | 2026-10-24 |
-| **TC-021** | Automated Regression Testing Pipeline | IR-021, DEC-013, DEC-024 | Regression | อัตโนมัติ | `scripts/run_tests.ps1` + `pytest` (58 offline items) | **Pass** | สคริปต์ `run_tests.ps1` รันชุด unit, integration, fs และ offline e2e ผ่านครบ 58 รายการ; พิสูจน์การจับ regression ได้จริง (คืน Exit Code 1 เมื่อทำลายกฎโฟลเดอร์) | 2026-10-24 |
+| **TC-021** | Automated Regression Testing Pipeline | IR-021, DEC-013, DEC-024, DEC-051 | Regression | อัตโนมัติ | `scripts/run_tests.ps1` (`(unit or integration or fs) and not network`) + git hook `pre-commit` / `pre-push` (`scripts/install_git_hooks.ps1`) | **Pass** | 2026-10-24: แก้ไข `folder_organizer.py` ให้ใช้ Track Artist (ผิด IR-011) แล้วสั่ง `git commit` จริง → hook `pre-commit` รันชุด regression ได้ `6 failed, 65 passed, 1 deselected` ข้อความ `Regression tests failed! commit aborted.` และ `git commit` คืน exit code 1, HEAD ไม่เปลี่ยน (`0afbf62`) จากนั้นคืนไฟล์เดิมและรันชุดเต็มได้ `71 passed, 1 deselected`. ข้อจำกัด: hook อยู่ใน `.git/hooks` (ไม่ถูก version) ต้องรัน `install_git_hooks.ps1` ในทุก clone | 2026-10-24 |
 | **TC-022** | ไม่พบปกอัลบั้ม (สวิตซ์ค่าเริ่มต้น `require_cover=False`) | IR-005, IR-020, DEC-031 | Unit | อัตโนมัติ | `tests/unit/test_output_validator.py` | **Pass** | `test_tc022_missing_cover_with_default_switch_passes_with_warning` ผ่านเป็น `Completed` พร้อม Warning | 2026-10-24 |
 | **TC-023** | ไม่พบปกอัลบั้ม (สวิตซ์บังคับมีปก `require_cover=True`) | IR-005, IR-020, DEC-031 | Unit / Integration | อัตโนมัติ | `tests/unit/test_output_validator.py`, `tests/integration/test_queue_worker.py` | **Pass** | `test_tc023_missing_cover_with_require_cover_true_fails_validation` ปรับงานเป็น `Failed` ไม่คัดลอกลงการ์ด | 2026-10-24 |
 | **TC-024** | การเลือกสตรีมเสียง (`REMUX_AAC` vs `ENCODE_AAC_LC`) | IR-004, IR-016, DEC-006, DEC-033 | Integration | อัตโนมัติ (`ffmpeg.exe` จริง) | `tests/integration/test_audio_pipeline.py` | **Pass** | ทั้ง `test_tc024a_stream_with_aac_lc_uses_remux` และ `test_tc024b_stream_without_aac_encodes_to_aac_lc` ผ่านด้วย `ffmpeg.exe` จริง (ตาม Plan 9.2 ค่า `TBA-027` ไม่บล็อกการทดสอบโดยใช้ค่าเริ่มต้นของ FFmpeg และบันทึกไว้แล้ว; ส่วนการทดสอบผ่านเน็ตจริงรอ URL ใน `PLADAZ_TEST_URLS`) | 2026-10-24 |
@@ -127,7 +127,7 @@
   ```powershell
   .\venv\Scripts\python.exe -m pytest -v -m "not network"
   ```
-- **ผลลัพธ์:** `58 passed, 1 deselected in 5.86s` (Unit 36 + Integration 21 + Offline E2E 1 = 58 passed)
+- **ผลลัพธ์:** `71 passed, 1 deselected in 6.35s` (2026-10-24 หลังแก้ตามรายงานตรวจสอบ; เดิม 58 + `test_audit_fixes.py` 13)
 - **สคริปต์ Regression:** `powershell -ExecutionPolicy Bypass -File .\scripts\run_tests.ps1`
 - **การทดลองฉีดบั๊กเพื่อพิสูจน์การจับ Regression:** ทดลองแก้ `SmartFolderOrganizer.resolve_folder_names` ให้ใช้ `track_artist` แทน `album_artist` ชั่วคราว แล้วรัน `run_tests.ps1` ระบบตรวจจับความผิดพลาดได้ทันทีที่ `test_tc003_folder_uses_album_artist_not_track_artist` และคืน Exit Code `1` ก่อน Revert โค้ดกลับสู่สถานะปกติและรันผ่านครบ
 

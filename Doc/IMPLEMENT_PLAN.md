@@ -5,7 +5,7 @@
 > **ภาษา:** ไทย  
 > **ชื่อโครงการ:** PLADAZ  
 > **สถานะ:** แผนการพัฒนาที่ยืนยันสถาปัตยกรรมและรายละเอียดทางเทคนิคหลักแล้ว (ส่วน UI Design แยกอ้างอิงในเอกสาร Design Direction โดยตรง; คงเหลือ TBA-023 เกณฑ์ตัวเลขประสิทธิภาพ, TBA-026 รายละเอียดการเทียบชื่อเพลง/ศิลปินกับผลค้นหา และ TBA-027 bitrate ของ fallback encode)  
-> **เวอร์ชันเอกสาร:** 2.5  
+> **เวอร์ชันเอกสาร:** 2.7  
 > **แพลตฟอร์มเป้าหมาย:** Windows  
 > **ข้อกำหนดสำคัญ:** ห้าม AI เติมข้อมูลที่ไม่มีหลักฐานหรือเปลี่ยนข้อกำหนดที่ระบุว่าเป็น Immutable Requirements โดยไม่ได้รับอนุญาต
 
@@ -603,6 +603,7 @@ AI ต้องปฏิบัติตามกฎต่อไปนี้ท�
 | DEC-048 | ไม่อนุมัติฟีเจอร์เลือกเฉพาะบางเพลงก่อนเข้าคิว (ตัดบอร์ด 12 `12_Picker.dc.html`) | ยืนยันแล้ว | เมื่อผู้ใช้วางลิงก์ Playlist หรือ Album ให้แตกและเพิ่มทุกเพลงเข้าคิวโดยตรงตามขอบเขตเดิมใน DEC-025 (ไม่สร้างหน้าต่าง Choose Tracks บอร์ด 12) |
 | DEC-049 | กำหนดพฤติกรรมเมื่อกดยืนยัน Cancel งานที่กำลังดาวน์โหลด (บอร์ด 11 `11_CancelConfirm.dc.html`, ขยายความ DEC-042) | ยืนยันแล้ว | เมื่อผู้ใช้ยืนยัน Cancel งานที่กำลัง `Downloading` ระบบจะปรับงานนั้นเป็น `Failed` (`ERR_TASK_CANCELLED`) ลบไฟล์ใน Temp และหยุดคิวชั่วคราว (`queue_halted = True`) โดยงานที่เหลือคงสถานะ `Queued` รอให้ผู้ใช้กด `Resume` |
 | DEC-050 | ยืนยันรายการตั้งค่าและเมธอดเสริมของ BridgeAPI สำหรับบอร์ด 01, 04, 06, 07, 09, 15, 16, 17, 20 | ยืนยันแล้ว | ยืนยันคีย์ `"require_album_art"` และ `"musicbrainz_user_agent"` ใน `config.json` (บอร์ด 06), ปิดปุ่ม Start Queue ชั่วคราวขณะกำลังอัปเดต `yt-dlp.exe` (บอร์ด 16), แสดง Third-Party Notices ในหน้า About (บอร์ด 20), และเพิ่มเมธอด `check_ytdlp_status`, `locate_ytdlp_file`, `clear_history`, `get_recent_logs`, `open_folder`, `quit_app` ใน `BridgeAPI` |
+| DEC-051 | ผลการตัดสินใจของเจ้าของโครงการต่อรายงานตรวจสอบขั้นสุดท้าย 2026-10-24 (ขยายความ DEC-038, DEC-040, DEC-042, DEC-050) | ยืนยันแล้ว (2026-10-24) | (1) **ปิดแอป:** ทิ้งงาน `Queued` โดยไม่บันทึก history งานที่กำลัง `Downloading` ถูก Cancel และบันทึกเป็น `Failed` (`ERR_TASK_CANCELLED`) และรอ Worker หยุดก่อนปิด (2) **คัดลอกลงการ์ดทุกครั้ง** เขียนเป็น `<Title>.m4a.pladaz-tmp` ตรวจสอบแล้วจึง `os.replace` (ขยาย DEC-040 จากเฉพาะ Overwrite เป็นทุกกรณี) (3) **ปลายทาง:** ยอมรับโฟลเดอร์ใดก็ได้ที่มีอยู่และเขียนได้ ไม่บังคับว่าต้องเป็นไดรฟ์ถอดได้ (ปุ่ม `USE THIS CARD` ยังเลือกได้เฉพาะไดรฟ์ถอดได้ที่ Backend สแกนพบ) (4) **Bridge เพิ่มเติม:** อนุมัติ `select_detected_drive(drive_root)` และ `clear_cookies_file()` และ `update_config` รับเฉพาะ `require_album_art` (bool), `musicbrainz_user_agent` (str), `destination_path` (str) (5) **รหัสเพิ่ม:** `ERR_TASK_RETRY_FAILED`, `ERR_TASK_REMOVE_FAILED`, `ERR_CONFLICT_NOT_FOUND`, `ERR_CONFIG_INVALID`, `ERR_HISTORY_WRITE_FAILED` (ส่งเป็น `system:error`) (6) **History** เก็บ `has_cover` เพื่อแสดงป้าย No cover (7) **Regression อัตโนมัติ (IR-021):** git `pre-commit` + `pre-push` hook รัน `scripts/run_tests.ps1` ซึ่งไม่รวมเทสต์เครือข่าย (8) **UI:** Clear History ต้องยืนยันก่อน และปิดหน้าต่าง Updater ไม่ได้ระหว่างอัปเดต |
 
 ### 13.2 Change Log
 
@@ -625,6 +626,7 @@ AI ต้องปฏิบัติตามกฎต่อไปนี้ท�
 | 2.4 | บันทึกความคืบหน้าการเสร็จสิ้น Phase 3 (พัฒนา `DownloadSourceAdapter`, `AudioProcessingService`, `HttpExternalMetadataFetcher`, `DownloadQueueManager`, ตัวเฝ้าดู SD Card เบื้องหลัง, `EventDispatcher`, `dto.py`, และ `BridgeAPI` พร้อมชุดทดสอบ `pytest` รวม 49 รายการผ่านทั้งหมด) |
 | 2.5 | บันทึกการตัดสินใจก่อนเริ่มงานและผลการเสร็จสิ้น Phase 4 (เพิ่ม DEC-045 ถึง DEC-050, พัฒนา `paths.py`, `main.py`, `ui/js/bridge.js`, `ui/js/app.js`, `ui/index.html` ครบ 19 บอร์ดที่อนุมัติโดยตัดบอร์ด 12 ออก, แพ็กฟอนต์ `.woff2` ออฟไลน์และ `ui/app.built.css`, สร้างแพ็กเกจ PyInstaller `--onedir` ใน `pladaz.spec`, และขยายชุดทดสอบ `pytest` เป็น 54 รายการผ่านทั้งหมด) |
 | 2.6 | ปรับปรุงสถาปัตยกรรม Binary และ Deployment: ย้าย `yt-dlp.exe` เข้าไปอยู่ใน `_internal/bin/` (พร้อม fallback ค้นหาข้าง `.exe`), อัปเดตกลไก in-place update ของ `update_ytdlp()` ให้ทำงานตรงตำแหน่งติดตั้ง, ตัด `ffprobe.exe` ออกเนื่องจากใช้ pure-Python `mutagen` และ `AudioValidatorService` ประหยัดพื้นที่ ~227 MB, เพิ่มการดึงปกสตรีมแบบ fallback HTTP, เพิ่ม `.gitignore` สำหรับ binary ขนาดใหญ่, และอัปเดตผลทดสอบเป็น 58 passed (offline) / 1 skipped (live network) |
+| 2.7 | บันทึก DEC-051 จากรายงานตรวจสอบขั้นสุดท้าย 2026-10-24: ปิดแอปแบบรอ Worker และทิ้งงาน Queued, คัดลอกผ่าน `.pladaz-tmp` ทุกครั้ง, นโยบายโฟลเดอร์ปลายทาง, อนุมัติเมธอด Bridge และรหัสข้อผิดพลาดเพิ่มเติม, `has_cover` ใน history, hook `pre-commit` สำหรับ regression และปรับถ้อยคำ DEC-038 |
 
 ---
 

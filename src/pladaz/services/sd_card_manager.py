@@ -232,9 +232,10 @@ class SDCardManager:
     ) -> Path:
         """Copy `temp_file` to `target` on SD Card with fsync and verify size + mutagen readability (DEC-032, DEC-040).
 
-        - When `overwrite=True` (or overwriting an existing file), copies first to `<Title>.m4a.pladaz-tmp`
-          in the same target folder, verifies it, and then replaces `target` via `os.replace()` so the
-          existing file on the card is preserved if the card disconnects mid-copy (DEC-040, TC-028).
+        Every copy is staged as `<Title>.m4a.pladaz-tmp` in the target folder, verified, and then moved
+        into place with `os.replace()`. An existing file is therefore preserved if the card disconnects
+        mid-copy (DEC-040, TC-028), and an interrupted copy (card removed or app closed) never leaves a
+        truncated file under the final name. `overwrite` is kept for callers; staging is used either way.
         """
         src_path = Path(temp_file)
         target_path = Path(target)
@@ -262,12 +263,7 @@ class SDCardManager:
                 details=str(exc),
             ) from exc
 
-        use_staged_overwrite = overwrite or target_path.exists()
-        write_path = (
-            target_path.with_name(f"{target_path.name}{OVERWRITE_TEMP_SUFFIX}")
-            if use_staged_overwrite
-            else target_path
-        )
+        write_path = target_path.with_name(f"{target_path.name}{OVERWRITE_TEMP_SUFFIX}")
 
         # 3. Copy with flush() + os.fsync()
         try:
@@ -316,16 +312,15 @@ class SDCardManager:
                 details=str(exc),
             ) from exc
 
-        # 5. If staged overwrite was used, atomically replace the target file on the same drive (DEC-040)
-        if write_path != target_path:
-            try:
-                os.replace(write_path, target_path)
-            except OSError as exc:
-                self._safe_unlink(write_path)
-                raise SDCardDisconnectedError(
-                    message_en="Failed to replace existing file on Micro SD Card (card may have been removed).",
-                    details=str(exc),
-                ) from exc
+        # 5. Move the verified staged file into place on the same drive (DEC-040)
+        try:
+            os.replace(write_path, target_path)
+        except OSError as exc:
+            self._safe_unlink(write_path)
+            raise SDCardDisconnectedError(
+                message_en="Failed to move the copied file into place on Micro SD Card (card may have been removed).",
+                details=str(exc),
+            ) from exc
 
         return target_path
 

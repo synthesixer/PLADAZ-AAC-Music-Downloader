@@ -391,13 +391,13 @@
                     <div class="text-[#9FD4F7]">📁 <span id="organizer-preview-root">E:\Music</span>\</div>
                     <div class="pl-4 text-[#F9C6E4]">└── 📁 &lt;Album Artist&gt;\</div>
                     <div class="pl-8 text-[#BFF0D4]">└── 📁 &lt;Album&gt;\</div>
-                    <div class="pl-12 text-[#FFF6B8]">└── ♪ 01 - &lt;Title&gt;.m4a</div>
+                    <div class="pl-12 text-[#FFF6B8]">└── ♪ &lt;Title&gt;.m4a</div>
                   </div>
                   <ul class="text-xs text-[var(--ink)] space-y-1.5 list-disc pl-4">
                     <li><strong>Missing Album Artist:</strong> Folder falls back to Track Artist, then <code class="mono bg-[var(--chip)] px-1 rounded">Unknown Artist</code> (metadata tag stays blank).</li>
                     <li><strong>Missing Album:</strong> Folder uses <code class="mono bg-[var(--chip)] px-1 rounded">Unknown Album</code> (metadata tag stays blank).</li>
                     <li><strong>Windows Sanitizer:</strong> Replaces <code class="mono bg-[var(--chip)] px-1 rounded">&lt; &gt; : " / \ | ? *</code> and trailing dots/spaces with <code class="mono bg-[var(--chip)] px-1 rounded">_</code>.</li>
-                    <li><strong>Safe Staged Overwrite:</strong> Writes to <code class="mono bg-[var(--chip)] px-1 rounded">.pladaz-tmp</code> + <code class="mono">os.fsync()</code> + mutagen check before atomic replace.</li>
+                    <li><strong>Safe Staged Copy:</strong> Every copy writes to <code class="mono bg-[var(--chip)] px-1 rounded">.pladaz-tmp</code> + <code class="mono">os.fsync()</code> + mutagen check, then moves into place — an existing file stays intact if the card is removed.</li>
                   </ul>
                 </div>
               </div>
@@ -554,7 +554,6 @@
         <h2 id="disclaimer-title" class="dela text-lg text-[var(--ink)]">PERSONAL USE DISCLAIMER</h2>
         <div class="rounded-xl border-2 border-[var(--ink)] bg-[var(--soft)] p-4 text-xs text-[var(--ink)] space-y-2 leading-relaxed max-h-[220px] overflow-y-auto selectable">
           <p class="mono font-bold text-[var(--violet)]">[DISCLAIMER TEXT — wording to be supplied by the project owner]</p>
-          <p>This software is intended strictly for personal, non-commercial archival and playback on your personal digital audio player (SNOWSKY ECHO DAP). Users are responsible for complying with applicable terms of service and copyright laws in their jurisdiction.</p>
         </div>
         <label id="disclaimer-checkbox-row" class="flex items-center gap-2.5 cursor-pointer select-none pt-1">
           <input id="disclaimer-accept-checkbox" type="checkbox" class="w-5 h-5 accent-[var(--hot)] rounded border-2 border-[var(--ink)]" />
@@ -672,6 +671,26 @@
     </div>
   </div>
 
+  <!-- BOARD 07: CLEAR HISTORY CONFIRMATION MODAL (same pattern as Board 11) -->
+  <div id="modal-clear-history" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="clear-history-title">
+    <div class="w-full max-w-[480px] rounded-[24px] border-[3px] border-[var(--ink)] bg-[var(--pinkbz)] p-4 shadow-[0_8px_0_#2B2540]">
+      <div class="rounded-2xl border-[2.5px] border-[var(--ink)] bg-[var(--paper)] p-5 space-y-4">
+        <div class="flex items-center gap-2">
+          <span class="sil text-xs px-2.5 py-1 rounded-full bg-[var(--err)] text-[var(--err-ink)] border-2 border-[var(--ink)] font-bold">WARNING — CANNOT BE UNDONE</span>
+        </div>
+        <h2 id="clear-history-title" class="dela text-lg text-[var(--ink)]">CLEAR DOWNLOAD HISTORY?</h2>
+        <p class="text-xs text-[var(--ink)] leading-relaxed">
+          This permanently removes <strong id="clear-history-count">all</strong> from <code class="mono bg-[var(--chip)] px-1 rounded">history.json</code>.
+          Music files already on your Micro SD Card are <strong>not</strong> deleted.
+        </p>
+        <div class="flex items-center justify-end gap-2.5 pt-2 border-t-2 border-[var(--line)]">
+          <button id="clear-history-no-btn" type="button" class="btn btn-s">NO, KEEP HISTORY</button>
+          <button id="clear-history-yes-btn" type="button" class="btn btn-d">YES, CLEAR</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- BOARD 14: 10-STAGE TASK DETAIL MODAL -->
   <div id="modal-task-stages" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="task-stages-title">
     <div class="w-full max-w-[560px] rounded-[24px] border-[3px] border-[var(--ink)] bg-[var(--pinkbz)] p-4 shadow-[0_8px_0_#2B2540]">
@@ -749,7 +768,8 @@
         <div id="updater-status-msg" class="rounded-xl border-2 border-[var(--ink)] bg-[var(--chip)] p-3 text-xs text-[var(--ink)]">
           Downloads latest <code class="mono">yt-dlp.exe</code> to a temporary file, verifies <code class="mono">--version</code>, and atomically replaces the binary.
         </div>
-        <div class="flex items-center justify-end gap-2 pt-2 border-t-2 border-[var(--line)]">
+        <div class="flex flex-wrap items-center justify-end gap-2 pt-2 border-t-2 border-[var(--line)]">
+          <span id="updater-close-reason" class="hidden text-xs text-[var(--violet-2)] mr-auto">Close is available when the update finishes.</span>
           <button id="updater-run-btn" type="button" class="btn btn-p">UPDATE NOW</button>
           <button id="updater-done-btn" type="button" class="btn btn-s">CLOSE</button>
         </div>

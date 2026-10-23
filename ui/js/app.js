@@ -79,15 +79,9 @@
     return `${mb.toFixed(0)} MB`;
   }
 
+  // Backend sends has_cover on TaskDTO and HistoryEntryDTO; null/undefined means unknown, so no badge.
   function hasNoCoverWarning(taskOrHistory) {
-    const warnings = (taskOrHistory && taskOrHistory.warnings) || [];
-    if (warnings.some((w) => String(w).includes("WARN_VALIDATOR_NO_COVER"))) {
-      return true;
-    }
-    if (taskOrHistory && taskOrHistory.status === "Completed" && taskOrHistory.has_cover === false) {
-      return true;
-    }
-    return false;
+    return Boolean(taskOrHistory && taskOrHistory.status === "Completed" && taskOrHistory.has_cover === false);
   }
 
   function getTaskDisplayTitle(task) {
@@ -953,6 +947,38 @@
     modal.classList.remove("hidden");
   }
 
+  function setUpdaterCloseLocked(locked) {
+    ["updater-close-btn", "updater-done-btn"].forEach((id) => {
+      const btn = document.getElementById(id);
+      if (btn) btn.disabled = locked;
+    });
+    const reason = document.getElementById("updater-close-reason");
+    if (reason) reason.classList.toggle("hidden", !locked);
+  }
+
+  // Keep Tab / Shift+Tab inside the top-most open dialog (Design Direction accessibility rule)
+  function trapFocusInOpenModal(e) {
+    if (e.key !== "Tab") return;
+    const open = Array.from(document.querySelectorAll(".modal-backdrop")).filter(
+      (m) => !m.classList.contains("hidden")
+    );
+    const modal = open[open.length - 1];
+    if (!modal) return;
+    const focusable = Array.from(
+      modal.querySelectorAll("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])")
+    ).filter((el) => !el.disabled && !el.classList.contains("hidden"));
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && (document.activeElement === first || !modal.contains(document.activeElement))) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && (document.activeElement === last || !modal.contains(document.activeElement))) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+
   function openCancelConfirmModal(taskId) {
     const task = state.queue.find((t) => t.task_id === taskId);
     if (!task) return;
@@ -1396,7 +1422,18 @@
         renderHistoryList();
       });
     });
-    document.getElementById("history-clear-btn").addEventListener("click", async () => {
+    document.getElementById("history-clear-btn").addEventListener("click", () => {
+      const count = state.historyEntries.length;
+      document.getElementById("clear-history-count").textContent =
+        count === 1 ? "1 record" : `${count} records`;
+      document.getElementById("modal-clear-history").classList.remove("hidden");
+      document.getElementById("clear-history-no-btn").focus();
+    });
+    document.getElementById("clear-history-no-btn").addEventListener("click", () => {
+      document.getElementById("modal-clear-history").classList.add("hidden");
+    });
+    document.getElementById("clear-history-yes-btn").addEventListener("click", async () => {
+      document.getElementById("modal-clear-history").classList.add("hidden");
       const res = await window.PladazBridge.clearHistory();
       if (res && res.success) {
         state.historyEntries = [];
@@ -1567,6 +1604,7 @@
       const runBtn = document.getElementById("updater-run-btn");
       const msgEl = document.getElementById("updater-status-msg");
       state.ytdlpUpdating = true;
+      setUpdaterCloseLocked(true);
       renderQueueList();
       runBtn.disabled = true;
       runBtn.textContent = "UPDATING…";
@@ -1574,6 +1612,7 @@
 
       const res = await window.PladazBridge.updateYtdlpModule();
       state.ytdlpUpdating = false;
+      setUpdaterCloseLocked(false);
       runBtn.disabled = false;
       runBtn.textContent = "UPDATE NOW";
       renderQueueList();
@@ -1591,9 +1630,11 @@
       }
     });
     document.getElementById("updater-close-btn").addEventListener("click", () => {
+      if (state.ytdlpUpdating) return;
       document.getElementById("modal-updater").classList.add("hidden");
     });
     document.getElementById("updater-done-btn").addEventListener("click", () => {
+      if (state.ytdlpUpdating) return;
       document.getElementById("modal-updater").classList.add("hidden");
     });
 
@@ -1634,6 +1675,8 @@
       document.getElementById("modal-about").classList.add("hidden");
     });
 
+    document.addEventListener("keydown", trapFocusInOpenModal);
+
     // Keyboard Esc handling (Closes dismissible modals; NEVER closes Board 05 Conflict Prompt or Board 04 mandatory first-launch disclaimer)
     document.addEventListener("keydown", (e) => {
       if (e.key !== "Escape") return;
@@ -1642,7 +1685,13 @@
         document.getElementById("modal-cancel-confirm").classList.add("hidden");
         return;
       }
-      ["modal-task-stages", "modal-queue-summary", "modal-updater", "modal-error-log", "modal-about"].forEach((id) => {
+      if (!document.getElementById("modal-clear-history").classList.contains("hidden")) {
+        document.getElementById("modal-clear-history").classList.add("hidden");
+        return;
+      }
+      const dismissible = ["modal-task-stages", "modal-queue-summary", "modal-error-log", "modal-about"];
+      if (!state.ytdlpUpdating) dismissible.push("modal-updater");
+      dismissible.forEach((id) => {
         const el = document.getElementById(id);
         if (el && !el.classList.contains("hidden")) {
           el.classList.add("hidden");

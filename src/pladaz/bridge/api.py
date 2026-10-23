@@ -20,11 +20,24 @@ from pladaz.domain.errors import (
     SDCardDisconnectedError,
     SourceExtractionError,
 )
-from pladaz.services.config_store import ConfigHistoryStore
+from pladaz.services.config_store import (
+    CONFIG_KEY_MUSICBRAINZ_USER_AGENT,
+    CONFIG_KEY_REQUIRE_ALBUM_ART,
+    ConfigHistoryStore,
+)
 from pladaz.services.logger import build_safe_structured_error, redact_sensitive_text
 from pladaz.services.queue_manager import DownloadQueueManager
 from pladaz.services.sd_card_manager import SDCardManager
 from pladaz.services.source_adapter import DownloadSourceAdapter, _subprocess_creation_flags
+
+
+# Keys update_config() may change, with their required JSON type (F-13, DEC-051).
+# destination_path stays here because the backend still validates it with check_destination().
+UPDATABLE_CONFIG_KEYS: dict[str, type] = {
+    CONFIG_KEY_REQUIRE_ALBUM_ART: bool,
+    CONFIG_KEY_MUSICBRAINZ_USER_AGENT: str,
+    "destination_path": str,
+}
 
 
 def _query_ffmpeg_version(ffmpeg_path: Optional[Path] = None) -> str:
@@ -284,13 +297,29 @@ class BridgeAPI:
             return self._error_response(exc)
 
     def update_config(self, partial: dict[str, Any]) -> dict[str, Any]:
+        """Save Settings values. Only keys in UPDATABLE_CONFIG_KEYS are accepted; cookies, disclaimer,
+        and destination folder each have their own dedicated method with backend validation."""
         try:
             if not isinstance(partial, dict):
                 raise PladazError(
-                    code=ErrorCode.ERR_CONFIG_CORRUPT,
+                    code=ErrorCode.ERR_CONFIG_INVALID,
                     message_en="Invalid configuration payload.",
                     recoverable=True,
                 )
+            for key, value in partial.items():
+                expected_type = UPDATABLE_CONFIG_KEYS.get(key)
+                if expected_type is None:
+                    raise PladazError(
+                        code=ErrorCode.ERR_CONFIG_INVALID,
+                        message_en=f"Setting '{key}' cannot be changed here.",
+                        recoverable=True,
+                    )
+                if not isinstance(value, expected_type):
+                    raise PladazError(
+                        code=ErrorCode.ERR_CONFIG_INVALID,
+                        message_en=f"Setting '{key}' has an invalid value.",
+                        recoverable=True,
+                    )
             cfg = self._config_store.load_config()
             sd_dto = None
             if "destination_path" in partial and partial["destination_path"]:
@@ -489,7 +518,7 @@ class BridgeAPI:
                 return {
                     "success": False,
                     "error": {
-                        "code": "ERR_CONFLICT_NOT_FOUND",
+                        "code": ErrorCode.ERR_CONFLICT_NOT_FOUND,
                         "message_en": "No active conflict prompt found for the specified task.",
                         "recoverable": True,
                     },
@@ -506,7 +535,7 @@ class BridgeAPI:
                     "success": False,
                     "task": None,
                     "error": {
-                        "code": "ERR_TASK_RETRY_FAILED",
+                        "code": ErrorCode.ERR_TASK_RETRY_FAILED,
                         "message_en": "Task cannot be retried (not found or not in Failed state).",
                         "recoverable": True,
                     },
@@ -522,7 +551,7 @@ class BridgeAPI:
                 return {
                     "success": False,
                     "error": {
-                        "code": "ERR_TASK_REMOVE_FAILED",
+                        "code": ErrorCode.ERR_TASK_REMOVE_FAILED,
                         "message_en": "Task cannot be removed while downloading or was not found.",
                         "recoverable": True,
                     },

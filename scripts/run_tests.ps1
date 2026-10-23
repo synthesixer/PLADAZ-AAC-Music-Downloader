@@ -1,8 +1,9 @@
 # PLADAZ - Automated Regression Testing Script (IR-021, TC-021)
-# Runs unit, integration, and fs suites and exits with non-zero on failure.
+# Runs unit, integration, and fs suites (never the live-network tests) and exits with non-zero on failure.
 
 param (
-    [string]$Markers = "unit or integration or fs",
+    # A command-line -m replaces pytest's addopts '-m not network', so the network exclusion must be repeated here.
+    [string]$Markers = "(unit or integration or fs) and not network",
     [switch]$All,
     [switch]$SmokeTest
 )

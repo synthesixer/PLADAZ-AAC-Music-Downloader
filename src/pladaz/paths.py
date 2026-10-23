@@ -35,9 +35,11 @@ def resolve_app_paths(
 
     - In frozen mode (`sys.frozen == True`):
       - `app_root` is the folder containing `PLADAZ.exe`. Mutable files (`config.json`, `history.json`,
-        `logs/`, `temp/`) and standalone `yt-dlp.exe` (`DEC-038`) live directly under `app_root`.
+        `logs/`, `temp/`) live directly under `app_root`.
       - `bundle_root` is `sys._MEIPASS` (in `--onedir`, `<app_root>/_internal`) if present, else `app_root`.
-        Read-only bundled assets (`ui/`, bundled `bin/ffmpeg.exe`) are resolved from `bundle_root` (with fallback to `app_root`).
+        `ui/`, `bin/ffmpeg.exe`, and `bin/yt-dlp.exe` are resolved from `bundle_root` (with fallback to `app_root`).
+      - `yt-dlp.exe` lookup order (DEC-038): `<bundle_root>/bin/` -> `<app_root>/bin/` -> next to `PLADAZ.exe`;
+        the first match wins. When none exists, `<bundle_root>/bin/yt-dlp.exe` is the install target.
     - In dev mode (`sys.frozen == False`):
       - `app_root` and `bundle_root` both point to the repository root.
     """

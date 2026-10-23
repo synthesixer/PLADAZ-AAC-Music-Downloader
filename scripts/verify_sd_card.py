@@ -196,8 +196,11 @@ def verify_sd_card(
         print(f"Cross-referencing with history: {history_path.name}")
         try:
             history_data = json.loads(history_path.read_text(encoding="utf-8"))
+            # history.json is {"schema_version": 1, "entries": [...]}
             completed_entries = [
-                e for e in history_data if e.get("status") == "Completed"
+                e
+                for e in history_data.get("entries", [])
+                if isinstance(e, dict) and e.get("status") == "Completed"
             ]
             print(f"  -> Completed entries in history: {len(completed_entries)}")
             print(f"  -> Files present on SD card: {len(m4a_files)}")

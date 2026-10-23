@@ -42,6 +42,8 @@ class AudioFormat:
     acodec: str
     abr: Optional[float]
     ext: str
+    # 'none' for audio-only streams; None when yt-dlp did not report it
+    vcodec: Optional[str] = None
 
 
 @dataclass
@@ -164,4 +166,6 @@ class HistoryEntry:
     source_url: str
     warnings: list[str] = field(default_factory=list)
     error_code: Optional[str] = None
+    # None when no metadata was resolved (e.g. failed before fetching info) or for entries written before this field existed
+    has_cover: Optional[bool] = None
 

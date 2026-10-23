@@ -3,8 +3,9 @@
 import json
 import os
 from pathlib import Path
+import queue
 import subprocess
-from threading import Event
+from threading import Event, Thread
 import time
 from typing import Any, Callable, Optional
 from urllib.parse import urlparse
@@ -46,6 +47,8 @@ ALLOWED_YOUTUBE_HOSTS: frozenset[str] = frozenset(
 
 DEFAULT_SUBPROCESS_TIMEOUT_SEC: float = 120.0
 DEFAULT_DOWNLOAD_TIMEOUT_SEC: float = 600.0
+# How often download_stream re-checks cancel/timeout while waiting for yt-dlp output
+STREAM_POLL_INTERVAL_SEC: float = 0.2
 
 ProgressCallback = Callable[[float, str, str], None]
 BinaryDownloader = Callable[[str, Path], None]
@@ -211,12 +214,14 @@ def parse_track_info(data: dict[str, Any], entry_url: str) -> RawTrackInfo:
         ext = fmt.get("ext")
         if not format_id or not acodec or str(acodec).lower() == "none":
             continue
+        vcodec = fmt.get("vcodec")
         audio_formats.append(
             AudioFormat(
                 format_id=str(format_id),
                 acodec=str(acodec),
                 abr=_safe_float(fmt.get("abr") or fmt.get("tbr")),
                 ext=str(ext or ""),
+                vcodec=str(vcodec) if vcodec is not None else None,
             )
         )
 
@@ -407,7 +412,12 @@ class DownloadSourceAdapter:
                 mode=AudioProcessMode.REMUX_AAC,
             )
 
-        best_other = max(valid_formats, key=lambda f: f.abr or 0.0)
+        # Prefer audio-only streams: for muxed video formats `abr` falls back to the total bitrate
+        # (video included), which would otherwise win and download a video stream.
+        audio_only = [
+            f for f in valid_formats if (f.vcodec or "none").lower() == "none"
+        ]
+        best_other = max(audio_only or valid_formats, key=lambda f: f.abr or 0.0)
         return StreamPlan(
             format_id=best_other.format_id,
             mode=AudioProcessMode.ENCODE_AAC_LC,
@@ -461,17 +471,36 @@ class DownloadSourceAdapter:
                 details=redact_sensitive_text(str(exc)),
             ) from exc
 
+        # Read stdout/stderr on background threads so cancel and timeout are checked even while
+        # yt-dlp prints nothing (network stall), and a full stderr pipe can never block the process.
+        assert proc.stdout is not None and proc.stderr is not None
+        stdout_lines: "queue.Queue[Optional[str]]" = queue.Queue()
+        stderr_chunks: list[str] = []
+
+        def _pump_stdout() -> None:
+            try:
+                for out_line in proc.stdout:  # type: ignore[union-attr]
+                    stdout_lines.put(out_line)
+            except (OSError, ValueError):
+                pass
+            finally:
+                stdout_lines.put(None)
+
+        def _drain_stderr() -> None:
+            try:
+                stderr_chunks.append(proc.stderr.read())  # type: ignore[union-attr]
+            except (OSError, ValueError):
+                pass
+
+        Thread(target=_pump_stdout, name="ytdlp-stdout", daemon=True).start()
+        stderr_thread = Thread(target=_drain_stderr, name="ytdlp-stderr", daemon=True)
+        stderr_thread.start()
+
         start_time = time.monotonic()
-        stderr_output = ""
         try:
-            assert proc.stdout is not None
-            for raw_line in proc.stdout:
+            while True:
                 if cancel_event is not None and cancel_event.is_set():
-                    proc.terminate()
-                    try:
-                        proc.wait(timeout=3)
-                    except subprocess.TimeoutExpired:
-                        proc.kill()
+                    self._stop_process(proc)
                     raise TaskCancelledError()
 
                 if (time.monotonic() - start_time) > self.download_timeout_sec:
@@ -481,18 +510,26 @@ class DownloadSourceAdapter:
                         details=f"timeout={self.download_timeout_sec}s",
                     )
 
+                try:
+                    raw_line = stdout_lines.get(timeout=STREAM_POLL_INTERVAL_SEC)
+                except queue.Empty:
+                    continue
+                if raw_line is None:
+                    break
+
                 line = raw_line.strip()
                 if progress_cb is not None and "PLADAZ_PROG:" in line:
                     self._dispatch_progress_line(line, progress_cb)
 
-            _, stderr_output = proc.communicate(timeout=10)
-        except TaskCancelledError:
-            raise
+            proc.wait(timeout=10)
         except subprocess.TimeoutExpired as exc:
             proc.kill()
             raise SourceNetworkTimeoutError(
                 message_en="Download process timed out while finishing.",
             ) from exc
+
+        stderr_thread.join(timeout=2)
+        stderr_output = "".join(stderr_chunks)
 
         if cancel_event is not None and cancel_event.is_set():
             raise TaskCancelledError()
@@ -514,6 +551,14 @@ class DownloadSourceAdapter:
                 message_en="yt-dlp finished without producing an audio file in Temp.",
             )
         return downloaded_files[0]
+
+    @staticmethod
+    def _stop_process(proc: subprocess.Popen) -> None:
+        proc.terminate()
+        try:
+            proc.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            proc.kill()
 
     @staticmethod
     def _dispatch_progress_line(

@@ -4,7 +4,7 @@
 >
 > **ภาษา:** ไทย  
 > **ชื่อโครงการ:** PLADAZ  
-> **เวอร์ชันเอกสาร:** 2.3 (อ้างอิง `IMPLEMENT_PLAN.md` เวอร์ชัน 2.5)  
+> **เวอร์ชันเอกสาร:** 2.4 (อ้างอิง `IMPLEMENT_PLAN.md` เวอร์ชัน 2.7)  
 > **แพลตฟอร์มเป้าหมาย:** Windows 10 / 11  
 > **อุปกรณ์เป้าหมาย:** SNOWSKY ECHO DAP (Native `.m4a`)  
 > **ขอบเขต:** สถาปัตยกรรม, Interface ระหว่างโมดูล, Data Models, Data Flow & Event, Error Handling & Logging, Traceability Matrix ส่วน UI Design แยกอ้างอิงตาม `DEC-028`
@@ -336,6 +336,7 @@ class HistoryEntry:
     source_url: str
     warnings: list[str] = field(default_factory=list)
     error_code: Optional[str] = None
+    has_cover: Optional[bool] = None            # None = ไม่ทราบ (ยังไม่ได้ resolve metadata หรือรายการเก่า) (DEC-051)
 ```
 
 ### 2.3 DTO สำหรับข้าม Bridge [Proposal — แก้ข้อผิดพลาดจากรอบ review]
@@ -494,7 +495,7 @@ classDiagram
   3. คัดลอกโดย **อ่าน-เขียนเองแล้วเรียก `flush()` + `os.fsync()`** (`shutil.copy2` ไม่ fsync จึงไม่ถือว่า flush ลงดิสก์ — แก้จากรุ่นเดิม)
   4. Verify: ไฟล์ปลายทางมีอยู่ ขนาดตรงกับต้นทาง และเปิดด้วย `mutagen` ได้
   5. ถ้า `OSError`/การ์ดหลุด ลบไฟล์ปลายทางที่เขียนค้างถ้าเข้าถึงได้ แล้วโยน `SDCardDisconnectedError`
-- **Overwrite (DEC-040):** เมื่อปลายทางมีไฟล์เดิมและผู้ใช้เลือก Overwrite ให้คัดลอกไปเป็นชื่อชั่วคราวในโฟลเดอร์เดียวกันบนการ์ดก่อน (ชื่อเช่น `<Title>.m4a.pladaz-tmp` — รูปแบบชื่อเป็น Proposal) ผ่านขั้น Verify แล้วจึงแทนที่ไฟล์เดิมด้วย `os.replace` (ไฟล์อยู่ไดรฟ์เดียวกัน) ถ้าล้มเหลวหรือการ์ดหลุด ลบไฟล์ชั่วคราว ไฟล์เดิมต้องยังอยู่ครบ ใช้วิธีนี้เฉพาะ Overwrite กรณีอื่นใช้ขั้นตอนข้อ 3–5 ตามปกติ ไฟล์ `.pladaz-tmp` ที่ค้างหากการ์ดหลุดจนลบไม่ได้ ให้ล้างเมื่อเข้าโฟลเดอร์นั้นครั้งถัดไป [Proposal]
+- **Overwrite (DEC-040):** เมื่อปลายทางมีไฟล์เดิมและผู้ใช้เลือก Overwrite ให้คัดลอกไปเป็นชื่อชั่วคราวในโฟลเดอร์เดียวกันบนการ์ดก่อน (ชื่อเช่น `<Title>.m4a.pladaz-tmp` — รูปแบบชื่อเป็น Proposal) ผ่านขั้น Verify แล้วจึงแทนที่ไฟล์เดิมด้วย `os.replace` (ไฟล์อยู่ไดรฟ์เดียวกัน) ถ้าล้มเหลวหรือการ์ดหลุด ลบไฟล์ชั่วคราว ไฟล์เดิมต้องยังอยู่ครบ ตั้งแต่ DEC-051 ใช้วิธีนี้กับการคัดลอก**ทุกครั้ง** (ไม่ใช่เฉพาะ Overwrite) เพื่อไม่ให้เหลือไฟล์ไม่ครบในชื่อจริงเมื่อการ์ดหลุดหรือปิดแอประหว่างคัดลอก ไฟล์ `.pladaz-tmp` ที่ค้างหากการ์ดหลุดจนลบไม่ได้ ให้ล้างเมื่อเข้าโฟลเดอร์นั้นครั้งถัดไป [Proposal]
 
 **(7) `ConfigHistoryStore`** — `DEC-023`, `TBA-024`
 
@@ -521,10 +522,11 @@ classDiagram
 
 | กลุ่ม | เมธอด | พารามิเตอร์ | คืนค่า | อ้างอิง |
 |---|---|---|---|---|
-| App | `get_initial_state()` | – | `{ version, config, disclaimer_accepted, sd_status, removable_drives, queue: [TaskDTO], queue_running, queue_halted, ytdlp_status, system_info, startup_error }` | DEC-023, 026, 027, 050 |
+| App | `get_initial_state()` | – | `{ version, config, disclaimer_accepted, sd_status, removable_drives, queue: [TaskDTO], queue_running, queue_halted, pending_conflict, ytdlp_status, system_info, startup_error }` | DEC-023, 026, 027, 050 |
 | | `accept_disclaimer()` | – | `{ success }` | DEC-027 |
-| | `update_config(partial)` | `dict` | `{ success, config, sd_status }` | DEC-023, 031, 050 |
+| | `update_config(partial)` | `dict` (คีย์ที่รับ: `require_album_art: bool`, `musicbrainz_user_agent: str`, `destination_path: str`; คีย์อื่นหรือชนิดผิด → `ERR_CONFIG_INVALID`) | `{ success, config, sd_status }` | DEC-023, 031, 050, 051 |
 | | `select_cookies_file()` | – | `{ success, selected_path, filename }` | DEC-027 |
+| | `clear_cookies_file()` | – | `{ success, selected_path: null, filename: null }` | DEC-027, 051 (บอร์ด 06) |
 | | `check_ytdlp_status()` | – | `{ success, present, version, expected_path }` | DEC-038, 050 (บอร์ด 09) |
 | | `locate_ytdlp_file()` | – | `{ success, present, version, expected_path }` | DEC-038, 050 (บอร์ด 09) |
 | | `update_ytdlp_module()` | – | `{ success, old_version, new_version, message }` | DEC-026, 038 |
@@ -532,11 +534,12 @@ classDiagram
 | | `open_folder(target)` | `str` (`"destination"` \| `"logs"`) | `{ success, opened_path }` | DEC-050 (บอร์ด 15, 17, 20) |
 | | `quit_app()` | – | `{ success }` | DEC-050 (บอร์ด 04) |
 | SD | `scan_storage_devices()` | – | `{ success, devices: [SDCardDTO], sd_status }` | IR-019 |
-| | `browse_destination_folder()` | – | `{ success, selected_path, sd_status, config }` | IR-009, TC-008 |
+| | `browse_destination_folder()` | – | `{ success, selected_path, sd_status, config }` (รับโฟลเดอร์ใดก็ได้ที่เขียนได้ — DEC-051) | IR-009, TC-008 |
+| | `select_detected_drive(drive_root)` | `str` (ต้องอยู่ในผล `list_removable_drives()` ของ Backend) | `{ success, selected_path, sd_status, config }` | IR-009, DEC-051 (บอร์ด 03) |
 | Queue | `enqueue_urls(url_text)` | `str` | `{ success, tasks_added: [TaskDTO], error }` | IR-017, DEC-025 |
-| | `resolve_conflict(task_id, action, scope)` | `str,str,str` | `{ success }` | DEC-019, 036 |
-| | `retry_task(task_id)` | `str` | `{ success, task: TaskDTO }` | IR-017 |
-| | `remove_task(task_id)` | `str` | `{ success }` | IR-017 |
+| | `resolve_conflict(task_id, action, scope)` | `str,str,str` | `{ success }` (ไม่มี prompt ค้าง → `ERR_CONFLICT_NOT_FOUND`) | DEC-019, 036, 051 |
+| | `retry_task(task_id)` | `str` | `{ success, task: TaskDTO }` (ไม่พบ/ไม่ใช่ Failed → `ERR_TASK_RETRY_FAILED`) | IR-017, DEC-051 |
+| | `remove_task(task_id)` | `str` | `{ success }` (กำลังดาวน์โหลด/ไม่พบ → `ERR_TASK_REMOVE_FAILED`) | IR-017, DEC-051 |
 | | `clear_completed_tasks()` | – | `{ success }` | IR-017 |
 | | `get_cover_preview(task_id)` | `str` | `{ success, task_id, data_url }` | Proposal (2.3), DEC-050 |
 | | `start_queue()` / `cancel_task(task_id)` / `resume_queue()` | ดูด้านล่างตาราง | `{ success }` | DEC-042, DEC-049, TC-016 |
@@ -663,7 +666,7 @@ stateDiagram-v2
 | `task:status_changed` | `{ task: TaskDTO }` | สถานะหลักเปลี่ยน (รวม `warnings`) |
 | `task:conflict_prompt` | `{ task_id, existing_path, metadata_summary }` | พบไฟล์ซ้ำ (DEC-036) |
 | `sdcard:status_changed` | `{ status: SDCardDTO, alert: StructuredErrorDTO or null }` | การ์ดถูกถอด/เสียบ/พื้นที่เปลี่ยน |
-| `system:error` | `{ error: StructuredErrorDTO }` | ข้อผิดพลาดระดับระบบ (เช่น config เสีย) |
+| `system:error` | `{ error: StructuredErrorDTO }` | ข้อผิดพลาดระดับระบบระหว่างทำงาน เช่น เขียน `history.json` ไม่ได้ (`ERR_HISTORY_WRITE_FAILED`) ส่วน config เสียตอนเปิดแอปส่งผ่าน `get_initial_state().startup_error` |
 
 งานที่ถูก Skip ใช้ Event `queue:updated` (ไม่ต้องเพิ่ม Event ใหม่)
 
@@ -681,6 +684,8 @@ IR-019 และ TC-019 ต้องการให้แจ้งเตือ�
 ### 3.6 การเริ่มแอป [Proposal]
 
 ตอนเปิดแอป: ล้างไฟล์ค้างใน Temp (เกิดได้เมื่อแอปล่มกลางงาน — Plan 8 ข้อ 1 ระบุเฉพาะการลบเมื่องานเสร็จหรือผิดพลาด) → โหลด config/history (รับมือไฟล์เสียตาม 2.5(7)) → ตรวจ `disclaimer_accepted`
+
+ตอนปิดแอป (DEC-051): หยุดคิว ทิ้งงานที่ยัง `Queued` โดยไม่บันทึก history, Cancel งานที่กำลัง `Downloading` (บันทึกเป็น `Failed` / `ERR_TASK_CANCELLED`), รอ Worker หยุด (timeout 10 วินาที) แล้วล้าง Temp ทั้งหน้าต่างปิดและ `quit_app()` ใช้เส้นทางเดียวกัน
 
 ---
 
@@ -705,8 +710,14 @@ IR-019 และ TC-019 ต้องการให้แจ้งเตือ�
 | | `ERR_SDCARD_VERIFY_FAILED` | ขนาดไม่ตรง/อ่านบนการ์ดไม่ได้ | ลบไฟล์ครึ่ง ๆ บนการ์ด (ถ้าเข้าถึงได้), ลบ Temp, `Failed` |
 | Path | `ERR_PATH_TOO_LONG` | เส้นทางเต็มยาวเกินเพดาน Windows (DEC-043) | `Failed` ก่อนดาวน์โหลดเสียง พร้อมข้อความที่เข้าใจได้ |
 | Queue | `ERR_TASK_CANCELLED` | ผู้ใช้กด Cancel (DEC-042) | หยุดงาน ลบ Temp `Failed` (`recoverable = True`) |
+| | `ERR_TASK_RETRY_FAILED` | `retry_task` กับงานที่ไม่พบหรือไม่ใช่ `Failed` (DEC-051) | คืน `success: false` ไม่เปลี่ยนสถานะ |
+| | `ERR_TASK_REMOVE_FAILED` | `remove_task` กับงานที่กำลังดาวน์โหลดหรือไม่พบ (DEC-051) | คืน `success: false` |
+| | `ERR_CONFLICT_NOT_FOUND` | `resolve_conflict` เมื่อไม่มี prompt ค้างของงานนั้น (DEC-051) | คืน `success: false` ไม่เก็บกฎ Apply to all |
 | System | `ERR_CONFIG_CORRUPT` | `config.json`/`history.json` อ่านไม่ได้ **[Proposal]** | สำรองไฟล์เสีย + สร้างค่าเริ่มต้น + `system:error` |
 | | `ERR_YTDLP_UPDATE_FAILED` | อัปเดต yt-dlp ไม่สำเร็จ **[Proposal]** | แจ้งผู้ใช้ ใช้เวอร์ชันเดิมต่อ (กลไกตาม DEC-038) |
+| | `ERR_CONFIG_INVALID` | `update_config` ได้คีย์ที่ไม่อนุญาตหรือชนิดผิด (DEC-051) | คืน `success: false` ไม่บันทึก |
+| | `ERR_HISTORY_WRITE_FAILED` | เขียน `history.json` ไม่ได้ (DEC-051) | log + `system:error` ไฟล์เพลงไม่ได้รับผลกระทบ |
+| UI (ฝั่ง JS) | `ERR_BRIDGE_UNAVAILABLE`, `ERR_BRIDGE_CALL_FAILED`, `ERR_COMMAND_FAILED` | `bridge.js`/`app.js` เรียก Bridge ไม่ได้ หรือคำสั่งคืน `success: false` โดยไม่มี error (DEC-051) | แสดงแบนเนอร์ SYSTEM NOTICE |
 
 พฤติกรรม "หยุดคิว" หลังการ์ดหลุดใช้ตาม Plan 8 ข้อ 2 และผู้ใช้สั่งเดินคิวต่อด้วย `resume_queue()` (DEC-042)
 
