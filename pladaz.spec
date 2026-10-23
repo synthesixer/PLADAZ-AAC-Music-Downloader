@@ -20,10 +20,13 @@ datas = [
 ]
 
 binaries = []
-for tool_name in ("ffmpeg.exe",):
+for tool_name in ("ffmpeg.exe", "yt-dlp.exe"):
     local_bin = PROJECT_ROOT / "bin" / tool_name
+    root_bin = PROJECT_ROOT / tool_name
     if local_bin.exists():
         binaries.append((str(local_bin), "bin"))
+    elif root_bin.exists():
+        binaries.append((str(root_bin), "bin"))
     else:
         system_bin = shutil.which(tool_name) or shutil.which(Path(tool_name).stem)
         if system_bin:
@@ -83,14 +86,12 @@ coll = COLLECT(
     name="PLADAZ",
 )
 
-# DEC-038: Place standalone yt-dlp.exe alongside dist/PLADAZ/PLADAZ.exe (outside _internal archive)
+# Clean up any legacy external yt-dlp.exe placed directly in dist_folder
 dist_folder = Path(DISTPATH) / "PLADAZ"
-if dist_folder.exists():
-    for candidate in (PROJECT_ROOT / "yt-dlp.exe", PROJECT_ROOT / "bin" / "yt-dlp.exe"):
-        if candidate.exists():
-            try:
-                shutil.copy2(candidate, dist_folder / "yt-dlp.exe")
-            except OSError:
-                pass
-            break
+legacy_external_ytdlp = dist_folder / "yt-dlp.exe"
+if legacy_external_ytdlp.exists():
+    try:
+        legacy_external_ytdlp.unlink()
+    except OSError:
+        pass
 

@@ -78,7 +78,7 @@ def test_resolve_app_paths_dev_vs_frozen(tmp_path: Path) -> None:
     assert dev_paths.bundle_root == dev_root.resolve()
     assert dev_paths.ui_entry == (dev_root / "ui" / "index.html").resolve()
     assert dev_paths.config_file == (dev_root / "config.json").resolve()
-    assert dev_paths.ytdlp_path == (dev_root / "yt-dlp.exe").resolve()
+    assert dev_paths.ytdlp_path == (dev_root / "bin" / "yt-dlp.exe").resolve()
     assert dev_paths.ffmpeg_path == (dev_root / "bin" / "ffmpeg.exe").resolve()
 
     # 2. Frozen PyInstaller --onedir mode (PLADAZ.exe in dist/PLADAZ, _internal as _MEIPASS)
@@ -98,13 +98,13 @@ def test_resolve_app_paths_dev_vs_frozen(tmp_path: Path) -> None:
     )
     assert frozen_paths.app_root == dist_dir.resolve()
     assert frozen_paths.bundle_root == internal_dir.resolve()
-    # Mutable portable files and external yt-dlp.exe MUST be in app_root next to PLADAZ.exe
+    # Mutable portable files MUST be in app_root next to PLADAZ.exe
     assert frozen_paths.config_file == (dist_dir / "config.json").resolve()
     assert frozen_paths.history_file == (dist_dir / "history.json").resolve()
     assert frozen_paths.logs_dir == (dist_dir / "logs").resolve()
     assert frozen_paths.temp_dir == (dist_dir / "temp").resolve()
-    assert frozen_paths.ytdlp_path == (dist_dir / "yt-dlp.exe").resolve()
-    # Bundled read-only assets come from _internal (_MEIPASS)
+    # Bundled binaries live under _internal/bin
+    assert frozen_paths.ytdlp_path == (internal_dir / "bin" / "yt-dlp.exe").resolve()
     assert frozen_paths.ui_entry == (internal_dir / "ui" / "index.html").resolve()
     assert frozen_paths.ffmpeg_path == (internal_dir / "bin" / "ffmpeg.exe").resolve()
 

@@ -132,9 +132,11 @@ PLADAZV2/
 │       └── logger.py
 ├── ui/                          # Web assets (index.html, js/bridge.js, js/app.js, app.built.css, fonts/*.woff2)
 ├── ui_src/                      # ต้นทาง Tailwind (input.css) + tailwind.config.js (build ล่วงหน้า, DEC-029, DEC-045)
-├── bin/ffmpeg.exe
-├── (ข้างไฟล์ .exe) yt-dlp.exe       # แยกไฟล์ เพื่ออัปเดตได้ (DEC-038, DEC-046)
-├── pladaz.spec                  # PyInstaller spec โหมด --onedir (DEC-018, DEC-046)
+├── bin/
+│   ├── ffmpeg.exe               # FFmpeg binary (~166 MB)
+│   └── yt-dlp.exe               # yt-dlp binary (~17.8 MB) — อัปเดต in-place ได้ (DEC-038, DEC-046)
+│                                # *หมายเหตุ: ตัด ffprobe.exe ออก เพราะตรวจสอบด้วย mutagen โดยตรง ประหยัดไป ~227 MB
+├── pladaz.spec                  # PyInstaller spec โหมด --onedir (แพ็ก binaries ลง _internal/bin/, DEC-018, DEC-046)
 └── tests/
     ├── conftest.py
     ├── test_phase4_bridge_and_shell.py # ทดสอบ App Shell, Portable Paths, BridgeAPI และความสมบูรณ์ของออฟไลน์ UI Bundle
@@ -418,8 +420,8 @@ classDiagram
   - มีสตรีม AAC-LC (`acodec == "mp4a.40.2"` ใน `m4a`) → เลือกตัวที่ดีที่สุด → `REMUX_AAC`
   - ไม่มี → เลือกสตรีมเสียงที่ดีที่สุด → `ENCODE_AAC_LC`
 - `download_stream(...)`: ดาวน์โหลดลง Temp เท่านั้น
-- `update_ytdlp()` (DEC-038): ใช้ **`yt-dlp.exe` แยกไฟล์** วางข้างไฟล์ `.exe` ของแอป Adapter เรียกผ่าน `subprocess` (ผลข้อมูลอ่านจาก JSON ของ yt-dlp และความคืบหน้าอ่านจากเอาต์พุต) แทนการ import เป็นโมดูล Python การอัปเดตทำโดยดาวน์โหลดไฟล์ใหม่ไว้ชั่วคราวแล้วแทนที่ `yt-dlp.exe` เดิม ถ้าล้มเหลวให้คงตัวเดิมและส่ง `ERR_YTDLP_UPDATE_FAILED` รายละเอียดแหล่งดาวน์โหลดและการตรวจเวอร์ชัน: ยังไม่กำหนด
-  - Plan ปรับถ้อยคำแล้วใน DEC-018, TBA-003 และหัวข้อ 5.3 ข้อ 4
+- `update_ytdlp()` (DEC-038): ใช้ binary **`yt-dlp.exe`** ซึ่งแพ็กไว้ใน `_internal/bin/yt-dlp.exe` (และรองรับ fallback ค้นหาข้าง `PLADAZ.exe` หรือใน `bin/`) Adapter เรียกผ่าน `subprocess` (ผลข้อมูลอ่านจาก JSON ของ yt-dlp และความคืบหน้าอ่านจากเอาต์พุต) การอัปเดตทำโดยดาวน์โหลดไฟล์ใหม่ไว้เป็นไฟล์ชั่วคราว (`yt-dlp.tmp.exe`), ตรวจสอบ `--version` และสลับแทนที่แบบ atomic (`os.replace`) ตรงตำแหน่งที่ติดตั้ง ถ้าล้มเหลวให้ rollback คงตัวเดิมและส่ง `ERR_YTDLP_UPDATE_FAILED`
+  - Plan ปรับถ้อยคำแล้วใน DEC-018, DEC-038, DEC-046 และหัวข้อ 5.3 ข้อ 4
 
 **(2) `MetadataAlbumArtService`** — `DEC-008`, `DEC-021`, `DEC-035`, `TBA-026`
 
@@ -779,7 +781,7 @@ Open Decision ทั้งหมดจากรุ่น 2.0 ปิดแล้�
 | OD-04 | ควบคุมคิว | รอกด Start + Cancel/Resume; Cancel = `Failed` (`ERR_TASK_CANCELLED`) | DEC-042 |
 | OD-05 | ลำดับดึงข้อมูลต่อแทร็ก | `fetch_track_info` ขั้นเดียว | [Design] ในเอกสารนี้ |
 | OD-06 | MAX_PATH | ยอมรับกรณีสุดโต่ง `Failed` ด้วย `ERR_PATH_TOO_LONG` | DEC-043 |
-| OD-07 | อัปเดต yt-dlp | `yt-dlp.exe` แยกไฟล์ข้าง `.exe` | DEC-038 |
+| OD-07 | อัปเดต yt-dlp | `yt-dlp.exe` ใน `_internal/bin/` (หรือข้าง `.exe`) อัปเดต in-place ได้ | DEC-038, DEC-046 |
 | OD-08 | bitrate ของ fallback encode | คงเป็น TBA | TBA-027 |
 | OD-09 | Sanitizer | เข้มงวดกว่ากฎเดิม | DEC-037 |
 | OD-10 | ขอบเขต Apply to all | อัลบั้ม = โฟลเดอร์ปลายทางเดียวกัน; คิว = ทั้งรอบการรันรวมงานที่เพิ่มทีหลัง | DEC-044 |
@@ -801,10 +803,10 @@ Open Decision ทั้งหมดจากรุ่น 2.0 ปิดแล้�
 - การเขียนทับไฟล์บนการ์ดจำลองผ่าน `.pladaz-tmp` + `os.replace` และการรักษาไฟล์เดิมเมื่อการ์ดหลุดกลางคัน ทดสอบแล้ว (`TC-019`, `TC-028`)
 - การจัดการไฟล์ `config.json` / `history.json` เสียหาย และการกรองข้อมูลจาก `cookies.txt` ไม่ให้หลุดลง Log หรือ `StructuredError.details` ทดสอบแล้ว (`TC-017`, `TC-030`, `TC-032`)
 
-**สิ่งที่ตรวจสอบและยืนยันแล้วใน Phase 3–4 (`pytest` 54 passed + PyInstaller `--onedir` build):**
+**สิ่งที่ตรวจสอบและยืนยันแล้วใน Phase 3–5 (`pytest` 58 passed offline, 1 skipped live network + PyInstaller `--onedir` build):**
 - กระบวนการ remux (`REMUX_AAC`) และ fallback encode (`ENCODE_AAC_LC`) ด้วย `ffmpeg.exe` จริง และผ่าน `OutputValidator` ทดสอบแล้ว (`TC-024`)
 - การทำงานของ `DownloadQueueManager` แบบ Sequential Worker, การตรวจไฟล์ซ้ำก่อนดาวน์โหลดเสียง (`TC-013`), ขอบเขต `Apply to all` ทั้ง `album` และ `queue` (`TC-033`), การกด `Cancel` งานที่กำลังดาวน์โหลดแล้วหยุดคิวรอ `Resume` (`TC-016`, `DEC-049`), และการตรวจจับการ์ดหลุดเป็นระยะ (`TC-019`) ทดสอบแล้ว
-- การแยก Path ระหว่างโหมดพัฒนาและโหมด `sys.frozen` (`--onedir`), การล้าง `temp/` ตอนเปิดแอป, การบิลด์ CSS ล่วงหน้า (`ui/app.built.css`) และฝังฟอนต์ `.woff2` ออฟไลน์โดยไม่มีลิงก์ CDN (`DEC-029`, `DEC-045`), และการสร้างแพ็กเกจ `dist/PLADAZ/PLADAZ.exe` โดยมี `yt-dlp.exe` วางแยกข้าง `.exe` (`DEC-038`, `DEC-046`) ทดสอบและรันจริงผ่านแล้ว
+- การแยก Path ระหว่างโหมดพัฒนาและโหมด `sys.frozen` (`--onedir`), การล้าง `temp/` ตอนเปิดแอป, การบิลด์ CSS ล่วงหน้า (`ui/app.built.css`) และฝังฟอนต์ `.woff2` ออฟไลน์โดยไม่มีลิงก์ CDN (`DEC-029`, `DEC-045`), การตัด `ffprobe.exe` ออกโดยตรวจ MP4 atoms ด้วย pure-Python `mutagen`, และการสร้างแพ็กเกจ `dist/PLADAZ/PLADAZ.exe` โดยรวม binaries ไว้ใน `_internal/bin/` (`ffmpeg.exe`, `yt-dlp.exe`) พร้อมกลไก in-place update และ fallback (`DEC-038`, `DEC-046`) ทดสอบและรันจริงผ่านแล้ว
 
 **สิ่งที่ยังรอการทดสอบด้วยมือใน Phase 5:**
 - การทดสอบ `.exe` บนเครื่อง Windows สภาพแวดล้อมสะอาด (Clean Environment) ที่ไม่ได้ติดตั้ง Python

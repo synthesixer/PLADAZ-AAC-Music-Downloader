@@ -22,7 +22,7 @@
 | **pywebview** | 6.2.1 | Framework สำหรับ App Shell และ Native JS Bridge |
 | **PyInstaller** | 6.22.3 | ใช้แพ็กเกจโหมด `--onedir` (`dist\PLADAZ\`) |
 | **Microsoft Edge WebView2 Runtime** | 155.0.4283.62 | ตรวจพบที่ `C:\Program Files (x86)\Microsoft\EdgeWebView\Application\` |
-| **yt-dlp.exe** | 2026.10.21 | วางแยกอิสระข้างไฟล์ `.exe` ขนาด 17,880,111 ไบต์ (`DEC-038`) |
+| **yt-dlp.exe** | 2026.10.21 | รวมอยู่ใน `_internal\bin\yt-dlp.exe` (ขนาด 17,880,111 ไบต์, อัปเดต in-place ได้, `DEC-038`) |
 | **FFmpeg** | 9.0.2-full_build-www.gyan.dev (libavcodec 63.1.102) | สำหรับ Remux และ Audio Encoding (รวมอยู่ใน `_internal\bin\ffmpeg.exe`) |
 | **mutagen** | 1.48.1 | จัดการแท็ก MP4/M4A Atoms |
 | **Pillow (PIL)** | 13.0.0 | ตรวจสอบและแปลงภาพปก 1:1 JPEG 800×800 px |
@@ -153,9 +153,9 @@
 
 ### 5.4 ค่าแฮชและขนาดของไฟล์แจกจ่ายล่าสุด (Release Binaries SHA-256)
 - **`dist\PLADAZ\PLADAZ.exe`**:
-  - ขนาด: `5,897,641` ไบต์ (`~5.90 MB`)
-  - SHA-256: `631D923927E6D8140D8CE574888CAA62591479CC2F6A37F7771D8A31833354E2`
-- **`dist\PLADAZ\yt-dlp.exe`**:
+  - ขนาด: `5,897,603` ไบต์ (`~5.90 MB`)
+  - SHA-256: `8036F51114FF7F0B8683695A64E912F5ECEAC94DFE8E54A30F53B3AB71C7DA8B`
+- **`dist\PLADAZ\_internal\bin\yt-dlp.exe`**:
   - ขนาด: `17,880,111` ไบต์ (`~17.88 MB`)
   - SHA-256: `33121D192D706E62F684A06F80918E3F3A8BA52AC3A65213B6951C39C7D9F555`
 
@@ -167,7 +167,7 @@
 
 ### Checklist D: ทดสอบ `.exe` บนเครื่อง Windows สะอาด (ไม่มี Python)
 - [ ] 1. คัดลอกทั้งโฟลเดอร์ `dist\PLADAZ\` ไปยังเครื่อง Windows สะอาด (หรือ Windows Sandbox)
-- [ ] 2. ลบหรือเปลี่ยนชื่อ `yt-dlp.exe` ชั่วคราว แล้วดับเบิลคลิก `PLADAZ.exe` → ตรวจว่าหน้าต่างแจ้งเตือน `First-Run Setup · External Binary Required (yt-dlp.exe)` (บอร์ด 09) ปรากฏขึ้นอย่างถูกต้อง
+- [ ] 2. ลบหรือเปลี่ยนชื่อ `_internal\bin\yt-dlp.exe` ชั่วคราว แล้วดับเบิลคลิก `PLADAZ.exe` → ตรวจว่าหน้าต่างแจ้งเตือน `First-Run Setup · External Binary Required (yt-dlp.exe)` (บอร์ด 09) ปรากฏขึ้นอย่างถูกต้อง
 - [ ] 3. วาง `yt-dlp.exe` กลับคืน (หรือกด `CHECK AGAIN` / `LOCATE FILE…`) แล้วกด `OPEN PLADAZ ›` → หน้าต่าง `Personal Use Disclaimer` (บอร์ด 04) แสดงขึ้นในการเปิดครั้งแรก (`TC-029`)
 - [ ] 4. ติ๊กถูกยอมรับเงื่อนไขและกด `ACCEPT & CONTINUE` → เข้าสู่หน้าจอหลักโดยไม่มีหน้าต่างคอนโซล Command Prompt สีดำเด้งขึ้นมา
 - [ ] 5. ปิดแอปแล้วเปิดใหม่ → ตรวจว่า `config.json` คงอยู่ และหน้าต่าง Disclaimer ไม่แสดงซ้ำ

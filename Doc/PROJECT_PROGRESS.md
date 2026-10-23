@@ -79,9 +79,15 @@
 6. **ความตรงตาม Design Direction (`ui_src/input.css`, `ui/index.html`, `ui/js/app.js`, `Doc/PLADAZ — Design Direction & Handoff.md`):**
    - ปรับขนาดตัวอักษรขั้นต่ำทั่วทั้ง UI ให้ไม่ต่ำกว่า `12px` (`text-xs`), ใช้แถบความคืบหน้าแบบ 10 ช่อง (10-segment bar), ป้าย `✕ Failed` พื้นสีกรมท่าเข้ม `#2B2540` ตัวหนังสือขาว, และกล่องคำพูด `.speech-bubble` พร้อมหางสามเหลี่ยมและไอคอนพิกเซล 16×16 ในส่วน Now Processing
    - อัปเดตเอกสาร `Doc/PLADAZ — Design Direction & Handoff.md` ให้มีตารางครบทั้ง 20 บอร์ดและสอดคล้องกับ `DEC-019` (`Keep Both` เติม ` (1)`)
-7. **การปรับปรุง `LICENSE-THIRD-PARTY.txt` และการบิลด์ `dist/PLADAZ/PLADAZ.exe` ใหม่:**
+7. **การปรับปรุง `LICENSE-THIRD-PARTY.txt` และการตัด `ffprobe.exe` ออก:**
    - เพิ่มรายละเอียดสัญญาอนุญาต `GPLv2+` ของ `mutagen` และ `GPLv3` ของ `FFmpeg (gyan.dev release_full build)` พร้อมคำอธิบายเงื่อนไขกรณีแจกจ่ายต่อ
-   - บิลด์ `dist\PLADAZ\PLADAZ.exe` ใหม่ด้วย PyInstaller (`5,897,641` ไบต์, SHA-256: `631D923927E6D8140D8CE574888CAA62591479CC2F6A37F7771D8A31833354E2`) และลบโฟลเดอร์ชั่วคราว `build/` ออกเพื่อป้องกันความสับสนในการเปิดไฟล์ รวมถึงตัด `ffprobe.exe` ออกเพื่อประหยัดพื้นที่ 227 MB
+   - ตัด `ffprobe.exe` ออกเพื่อประหยัดพื้นที่ 227 MB เนื่องจากแอปใช้ pure-Python `mutagen.mp4.MP4` และ `AudioValidatorService` ในการตรวจสอบ atoms และ codec โดยตรง
+8. **การปรับปรุงสถาปัตยกรรม Binary, การแก้ปัญหาภาพปก และการบิลด์เวอร์ชันล่าสุด:**
+   - ย้าย `yt-dlp.exe` เข้าไปอยู่ใน `_internal/bin/yt-dlp.exe` ร่วมกับ `ffmpeg.exe` โดย `paths.py` รองรับ fallback หาข้าง `.exe` เพื่อความสะอาดของ root folder ในโหมด `--onedir`
+   - ปรับแต่ง `DownloadSourceAdapter.update_ytdlp()` ให้ทำการ in-place update ตรงตำแหน่งติดตั้ง binary ผ่าน atomic swap (`os.replace`)
+   - ต่อสาย `TemporaryExactMetadataMatcher` และ `HttpExternalMetadataFetcher` เข้ากับ `MetadataAlbumArtService` ใน `main.py` พร้อมเพิ่ม HTTP fallback ดาวน์โหลดภาพปกจาก YouTube stream `thumbnails` ทำให้ M4A มีภาพปก 800×800 JPEG ฝังใน atom `covr` เสมอ
+   - สร้างไฟล์ `.gitignore` เพื่อป้องกันการ commit binaries ขนาดใหญ่ (`*.exe`, `dist/`, `build/`) เข้า Git โดยอาศัย GitHub Releases ในการแจกจ่าย
+   - บิลด์ `dist\PLADAZ\PLADAZ.exe` ล่าสุดด้วย PyInstaller: ขนาด `5,897,603` ไบต์, SHA-256: `8036F51114FF7F0B8683695A64E912F5ECEAC94DFE8E54A30F53B3AB71C7DA8B`
 
 ---
 

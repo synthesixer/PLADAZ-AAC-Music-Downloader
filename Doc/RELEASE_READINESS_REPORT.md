@@ -67,8 +67,8 @@
 
 - **โฟลเดอร์สำหรับนำไปใช้งานและทดสอบ:** `dist\PLADAZ\` *(ห้ามรันจากโฟลเดอร์ `build\pladaz\`)*
 - **ไฟล์สำคัญในแพ็กเกจ:**
-  - `PLADAZ.exe` — ขนาด `5,897,641` ไบต์ (`~5.90 MB`), SHA-256: `631D923927E6D8140D8CE574888CAA62591479CC2F6A37F7771D8A31833354E2`
-  - `yt-dlp.exe` — ขนาด `17,880,111` ไบต์ (`~17.88 MB`), SHA-256: `33121D192D706E62F684A06F80918E3F3A8BA52AC3A65213B6951C39C7D9F555`
+  - `PLADAZ.exe` — ขนาด `5,897,603` ไบต์ (`~5.90 MB`), SHA-256: `8036F51114FF7F0B8683695A64E912F5ECEAC94DFE8E54A30F53B3AB71C7DA8B`
+  - `_internal\bin\yt-dlp.exe` — ขนาด `17,880,111` ไบต์ (`~17.88 MB`), SHA-256: `33121D192D706E62F684A06F80918E3F3A8BA52AC3A65213B6951C39C7D9F555`
   - `README.md`
   - `LICENSE-THIRD-PARTY.txt` (ระบุสัญญาอนุญาต MIT, BSD, SIL OFL-1.1, Unlicense, GPLv2+ ของ `mutagen` และ GPLv3 ของ `FFmpeg`)
   - โฟลเดอร์ `_internal\` (รวม Python 3.13 runtime, `python313.dll`, UI assets, ฟอนต์ออฟไลน์ `.woff2` และ `bin\ffmpeg.exe`)

@@ -62,16 +62,17 @@ def resolve_app_paths(
         ui_dir = app_root / "ui"
     ui_entry = ui_dir / "index.html"
 
-    # Standalone yt-dlp.exe lives next to PLADAZ.exe in app_root (DEC-038, Board 09).
-    # In dev mode, if app_root/yt-dlp.exe does not exist yet but app_root/bin/yt-dlp.exe exists, copy or use app_root/yt-dlp.exe.
-    ytdlp_path = app_root / "yt-dlp.exe"
-    if not is_frozen and not ytdlp_path.exists():
-        dev_bin_ytdlp = app_root / "bin" / "yt-dlp.exe"
-        if dev_bin_ytdlp.exists():
-            try:
-                shutil.copy2(dev_bin_ytdlp, ytdlp_path)
-            except OSError:
-                ytdlp_path = dev_bin_ytdlp
+    # Standalone yt-dlp.exe resolution: bundled under _internal/bin/yt-dlp.exe, with fallbacks to app_root
+    ytdlp_candidates = [
+        bundle_root / "bin" / "yt-dlp.exe",
+        app_root / "bin" / "yt-dlp.exe",
+        app_root / "yt-dlp.exe",
+    ]
+    ytdlp_path = (bundle_root / "bin" / "yt-dlp.exe").resolve()
+    for cand in ytdlp_candidates:
+        if cand.exists() and cand.is_file():
+            ytdlp_path = cand.resolve()
+            break
 
     # FFmpeg resolution: check bundle_root/bin, app_root/bin, app_root, then system PATH
     ffmpeg_path = _resolve_bundled_tool("ffmpeg.exe", bundle_root, app_root)
