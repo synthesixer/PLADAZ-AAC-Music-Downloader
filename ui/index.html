@@ -473,7 +473,7 @@
                   </div>
                   <div class="flex items-center gap-2 shrink-0">
                     <button id="settings-use-browser-btn" type="button" class="btn btn-p py-1.5 px-3 text-xs">USE BROWSER</button>
-                    <button id="settings-test-browser-btn" type="button" class="pbtn text-xs">TEST</button>
+                    <button id="settings-test-browser-btn" type="button" class="pbtn text-xs">TEST AGAIN</button>
                     <button id="settings-remove-browser-btn" type="button" class="pbtn text-[var(--err-ink)] text-xs">REMOVE</button>
                   </div>
                 </div>
@@ -852,23 +852,25 @@
         <h2 id="browser-consent-title" class="dela text-lg text-[var(--ink)]">USE COOKIES FROM <span id="browser-consent-target-name">BROWSER</span>?</h2>
         <div class="text-xs text-[var(--ink)] leading-relaxed space-y-2">
           <p>
-            PLADAZ can use authentication cookies from <strong id="browser-consent-browser-label">your browser</strong> so that age-restricted or member-only tracks can be downloaded without manual configuration.
+            Some tracks (age-restricted, members-only, or "sign in to confirm") only download when YouTube can see that you are signed in.
+            PLADAZ can use the sign-in from <strong id="browser-consent-browser-label">your browser</strong>, so you do not have to copy cookies by hand.
           </p>
           <div class="rounded-xl border-2 border-[var(--ink)] bg-[var(--soft)] p-3 space-y-1">
-            <div class="sil font-bold text-[var(--ink)]">WHAT PLADAZ DOES:</div>
-            <ul class="list-disc list-inside space-y-0.5 text-[var(--violet-2)]">
-              <li>Reads only session cookies needed by the download tool.</li>
-              <li>Never reads, logs, or transmits passwords, personal data, or browsing history.</li>
-              <li>Does not copy raw cookie values into config files or log files.</li>
+            <div class="sil font-bold text-[var(--ink)]">IF YOU CONTINUE:</div>
+            <ul class="list-disc list-inside space-y-1 text-[var(--ink)]">
+              <li>yt-dlp, the download tool inside PLADAZ, opens this browser's cookie store on this PC and reads its cookies. The store holds cookies for all websites, not only YouTube.</li>
+              <li>This happens now to check access, and again on every download while Browser Authentication is on.</li>
+              <li>Cookies stay in memory and are used only for yt-dlp's own requests to YouTube. PLADAZ saves only the browser name, never cookie values, and never writes them to the log.</li>
+              <li>PLADAZ never asks for your password and does not bypass browser or Windows protection if access is blocked.</li>
             </ul>
           </div>
-          <p class="text-[var(--violet-2)]">
-            You can revoke or switch this browser at any time in Settings.
+          <p class="font-bold">
+            Only continue if you allow this. You can turn it off any time in Settings › Browser Authentication.
           </p>
         </div>
         <div class="flex items-center justify-end gap-2.5 pt-2 border-t-2 border-[var(--line)]">
           <button id="browser-consent-cancel-btn" type="button" class="btn btn-s">CANCEL</button>
-          <button id="browser-consent-continue-btn" type="button" class="btn btn-p">ALLOW &amp; TEST</button>
+          <button id="browser-consent-continue-btn" type="button" class="btn btn-p">CONTINUE</button>
         </div>
       </div>
     </div>

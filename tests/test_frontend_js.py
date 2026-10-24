@@ -368,6 +368,8 @@ const fakeApi = {
       browsers: [
         { key: "firefox", label: "Firefox", status: "available", registered_with_windows: true, profile_found: true, is_default: false },
         { key: "chrome", label: "Google Chrome", status: "available", registered_with_windows: true, profile_found: true, is_default: true },
+        { key: "edge", label: "Microsoft Edge", status: "installed_no_profile", registered_with_windows: true, profile_found: false, is_default: false },
+        { key: "vivaldi", label: "Vivaldi", status: "not_detected", registered_with_windows: false, profile_found: false, is_default: false },
       ],
       recommended: "firefox",
       recommendation_reason: "Firefox is recommended because Chrome-based browsers on Windows often block other apps from reading their cookies.",
@@ -773,6 +775,26 @@ const flushPromises = async () => {
   // Clicking CANCEL closes consent modal without activating
   await documentObj.getElementById("browser-consent-cancel-btn").trigger("click");
   assert.strictEqual(consentModal.classList.contains("hidden"), true, "Cancel must close consent modal");
+  assert.ok(
+    documentObj.getElementById("settings-browser-feedback-msg").textContent.includes("No cookies were read"),
+    "Cancelling consent must say that nothing was read"
+  );
+
+  // Browser options show whether each browser was found
+  const optText = (key) => (bSelect.children.find((c) => c.value === key) || {}).textContent || "";
+  assert.ok(optText("vivaldi").includes("not detected"), "Not-detected browsers must be labelled");
+  assert.ok(optText("edge").includes("no profile found"), "Installed browsers without a profile must be labelled");
+
+  // TEST also reads cookies, so it must ask for consent first
+  const testCallsBefore = apiCalls.filter((c) => c[0] === "test_browser_cookies").length;
+  await documentObj.getElementById("settings-test-browser-btn").trigger("click");
+  await flushPromises();
+  assert.strictEqual(apiCalls.filter((c) => c[0] === "test_browser_cookies").length, testCallsBefore, "TEST must not read cookies before consent");
+  assert.strictEqual(consentModal.classList.contains("hidden"), false, "TEST must open the consent dialog");
+  await documentObj.getElementById("browser-consent-continue-btn").trigger("click");
+  await flushPromises();
+  assert.strictEqual(apiCalls.filter((c) => c[0] === "test_browser_cookies").length, testCallsBefore + 1, "Continue after TEST must run the check");
+  assert.ok(!apiCalls.some((c) => c[0] === "select_browser_cookies"), "TEST must not change the saved browser");
 
   // Re-open and confirm consent
   await documentObj.getElementById("settings-use-browser-btn").trigger("click");

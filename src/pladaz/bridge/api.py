@@ -21,6 +21,7 @@ from pladaz.domain.errors import (
     SourceExtractionError,
 )
 from pladaz.services.browser_auth import (
+    SUPPORTED_BROWSERS,
     browser_label,
     detect_browsers,
     is_supported_browser,
@@ -43,6 +44,11 @@ UPDATABLE_CONFIG_KEYS: dict[str, type] = {
     CONFIG_KEY_MUSICBRAINZ_USER_AGENT: str,
     "destination_path": str,
 }
+
+
+def _unsupported_browser_message(browser: str) -> str:
+    supported = ", ".join(browser_label(b) for b in SUPPORTED_BROWSERS)
+    return f"Browser '{browser}' is not supported for Browser Authentication. Supported browsers: {supported}."
 
 
 def _query_ffmpeg_version(ffmpeg_path: Optional[Path] = None) -> str:
@@ -416,7 +422,7 @@ class BridgeAPI:
             if not is_supported_browser(norm_name):
                 raise PladazError(
                     code=ErrorCode.ERR_CONFIG_INVALID,
-                    message_en=f"Unsupported browser '{browser}'. Supported: chrome, firefox, edge, brave, opera, vivaldi, chromium.",
+                    message_en=_unsupported_browser_message(browser),
                     recoverable=True,
                 )
             check = self._source_adapter.check_browser_cookies(norm_name)
@@ -441,7 +447,7 @@ class BridgeAPI:
             if not is_supported_browser(norm_name):
                 raise PladazError(
                     code=ErrorCode.ERR_CONFIG_INVALID,
-                    message_en=f"Unsupported browser '{browser}'. Supported: chrome, firefox, edge, brave, opera, vivaldi, chromium.",
+                    message_en=_unsupported_browser_message(browser),
                     recoverable=True,
                 )
             check = self._source_adapter.check_browser_cookies(norm_name)

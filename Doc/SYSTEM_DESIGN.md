@@ -4,7 +4,7 @@
 >
 > **ภาษา:** ไทย  
 > **ชื่อโครงการ:** PLADAZ  
-> **เวอร์ชันเอกสาร:** 2.4 (อ้างอิง `IMPLEMENT_PLAN.md` เวอร์ชัน 2.7)  
+> **เวอร์ชันเอกสาร:** 2.5 (อ้างอิง `IMPLEMENT_PLAN.md` เวอร์ชัน 2.9)  
 > **แพลตฟอร์มเป้าหมาย:** Windows 10 / 11  
 > **อุปกรณ์เป้าหมาย:** SNOWSKY ECHO DAP (Native `.m4a`)  
 > **ขอบเขต:** สถาปัตยกรรม, Interface ระหว่างโมดูล, Data Models, Data Flow & Event, Error Handling & Logging, Traceability Matrix ส่วน UI Design แยกอ้างอิงตาม `DEC-028`
@@ -421,7 +421,9 @@ classDiagram
   - มีสตรีม AAC-LC (`acodec == "mp4a.40.2"` ใน `m4a`) → เลือกตัวที่ดีที่สุด → `REMUX_AAC`
   - ไม่มี → เลือกสตรีมเสียงที่ดีที่สุด → `ENCODE_AAC_LC`
 - `download_stream(...)`: ดาวน์โหลดลง Temp เท่านั้น รองรับทั้ง `cookies_path` (Netscape file) และ `browser_cookies`
-- `check_browser_cookies(browser)` (DEC-052): ตรวจสอบการอ่านคุกกี้จากเบราว์เซอร์ที่ระบุโดยรัน `yt-dlp --cookies-from-browser <browser>` โดยไม่ใส่ URL ไม่ต่อเน็ตเวิร์ก คืนผล `BrowserCookieCheck` เพื่อแสดงคำแนะนำภาษาง่าย
+- `check_browser_cookies(browser)` (DEC-052): ตรวจสอบการอ่านคุกกี้จากเบราว์เซอร์ที่ระบุโดยรัน `yt-dlp -v --ignore-config --cookies-from-browser <browser>` โดยไม่ใส่ URL ไม่ต่อเน็ตเวิร์ก คืนผล `BrowserCookieCheck` เพื่อแสดงคำแนะนำภาษาง่าย (ยืนยันกับ yt-dlp 2026.10.21 และโปรไฟล์ Firefox จำลอง: ต้องมี `-v` จึงโหลดคุกกี้ และผลลัพธ์ไม่มีค่าคุกกี้) UI เรียกเมธอดนี้ผ่าน `test_browser_cookies` / `select_browser_cookies` หลังผู้ใช้กด Continue ในหน้าต่างยินยอมเท่านั้น
+- ลำดับคุกกี้ใน `_build_base_cmd`: ถ้ามี `cookies_path` ใช้ `--cookies` ก่อน มิฉะนั้นจึงใช้ `--cookies-from-browser` (DEC-052 ข้อ 9)
+- `classify_cookie_store_error(text)`: คืน `None` เมื่อผลลัพธ์มี `Extracted N cookies` (N > 0) เพื่อไม่นับความล้มเหลวอื่นเป็นปัญหาคุกกี้ (DEC-052 ข้อ 10)
 - `update_ytdlp()` (DEC-038): ใช้ binary **`yt-dlp.exe`** ซึ่งแพ็กไว้ใน `_internal/bin/yt-dlp.exe` (และรองรับ fallback ค้นหาข้าง `PLADAZ.exe` หรือใน `bin/`) Adapter เรียกผ่าน `subprocess` (ผลข้อมูลอ่านจาก JSON ของ yt-dlp และความคืบหน้าอ่านจากเอาต์พุต) การอัปเดตทำโดยดาวน์โหลดไฟล์ใหม่ไว้เป็นไฟล์ชั่วคราว (`yt-dlp.tmp.exe`), ตรวจสอบ `--version` และสลับแทนที่แบบ atomic (`os.replace`) ตรงตำแหน่งที่ติดตั้ง ถ้าล้มเหลวให้ rollback คงตัวเดิมและส่ง `ERR_YTDLP_UPDATE_FAILED`
   - Plan ปรับถ้อยคำแล้วใน DEC-018, DEC-038, DEC-046 และหัวข้อ 5.3 ข้อ 4
 

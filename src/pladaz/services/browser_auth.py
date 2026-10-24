@@ -438,8 +438,16 @@ def build_cookie_check(state: str, browser: str, cookie_count: Optional[int] = N
 
 
 def classify_cookie_store_error(text: str) -> Optional[str]:
-    """Return a CHECK_* state if `text` (yt-dlp output) shows the browser cookie store could not be used."""
+    """Return a CHECK_* state if `text` (yt-dlp output) shows the browser cookie store could not be used.
+
+    yt-dlp prints "Extracting cookies from <browser>" on every run that uses --cookies-from-browser, and
+    "Extracted N cookies ..." once the store was read. When cookies were read, a later failure (video
+    unavailable, network, format) is not a cookie problem, so None is returned for it.
+    """
     lowered = (text or "").lower()
+    extracted = _EXTRACTED_RE.search(text or "")
+    if extracted and int(extracted.group(1)) > 0:
+        return None
     if "unsupported browser specified for cookies" in lowered:
         return CHECK_UNSUPPORTED
     if "could not find" in lowered and ("cookies database" in lowered or "profile" in lowered):
@@ -450,7 +458,9 @@ def classify_cookie_store_error(text: str) -> Optional[str]:
         return CHECK_ENCRYPTION_BLOCKED
     if "cookie" in lowered and any(h in lowered for h in _PERMISSION_HINTS):
         return CHECK_PERMISSION_DENIED
-    if "failed to load cookies" in lowered or "extracting cookies from" in lowered and "error" in lowered:
+    if "failed to load cookies" in lowered:
+        return CHECK_FAILED
+    if any(line.startswith("error:") and "cookie" in line for line in lowered.splitlines()):
         return CHECK_FAILED
     return None
 

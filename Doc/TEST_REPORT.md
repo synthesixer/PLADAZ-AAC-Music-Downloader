@@ -35,10 +35,10 @@
 ## 2. สรุปจำนวนชุดทดสอบอัตโนมัติและเกณฑ์การบันทึกสถานะ
 
 ### 2.1 สรุปจำนวนการทดสอบอัตโนมัติ (`pytest`)
-- **จำนวนการทดสอบที่รวบรวมได้ทั้งหมด (Collected):** **86 รายการ** (ใน 15 ไฟล์ทดสอบ)
-- **ผลการรันชุดทดสอบออฟไลน์ทั้งหมด (`.\venv\Scripts\python.exe -m pytest -v -m "not network"`):** **`85 passed`**, `1 deselected` (`0 failed`, วันที่ 2026-10-24 รวมชุดทดสอบ Browser Authentication 14 รายการใหม่)
-  - **Unit Tests (`-m "unit"`):** **49 passed** (`tests/unit/` 47 รายการ รวม `test_browser_auth.py` 13 รายการ + `tests/test_frontend_js.py` 2 รายการ)
-  - **Integration Tests (`-m "integration and not e2e"`):** **22 passed** (`tests/integration/` 15 รายการ + `tests/test_phase4_bridge_and_shell.py` 7 รายการ รวมการทดสอบ BridgeAPI Browser Authentication)
+- **จำนวนการทดสอบที่รวบรวมได้ทั้งหมด (Collected):** **105 รายการ** (2026-10-24 หลังตรวจทาน Browser Authentication)
+- **ผลการรันชุดทดสอบออฟไลน์ทั้งหมด (`.\venv\Scripts\python.exe -m pytest -v -m "not network"`):** **`104 passed`**, `1 deselected` (`0 failed`, 2026-10-24)
+  - **Unit Tests (`-m "unit"`):** **66 รายการ** (รวม `tests/unit/test_browser_auth.py`, `tests/unit/test_browser_auth_fixes.py`, `tests/test_ux_static.py`, `tests/test_frontend_js.py`)
+  - **Integration Tests (`-m "integration and not e2e"`):** **37 รายการ** (รวม `tests/integration/test_audit_fixes.py`, `tests/integration/test_ux_fixes.py`, `tests/test_phase4_bridge_and_shell.py`)
   - **End-to-End Tests (`-m "e2e"`):** **2 รายการ**
     - ออฟไลน์ E2E (`test_bridge_e2e_full_queue_workflow_and_atom_verification`): **1 passed**
     - เครือข่ายจริง E2E (`test_bridge_e2e_live_network_download`): **1 skipped / deselected** เมื่อไม่ได้กำหนดตัวแปรสภาพแวดล้อม `PLADAZ_TEST_URLS` (รอ URL ทดสอบจากผู้ใช้)
@@ -180,8 +180,15 @@
   - ตรวจสอบการเรนเดอร์ dropdown เบราว์เซอร์และการแสดงป้าย `RECOMMENDED`
   - ตรวจสอบการเปิดหน้าต่าง Explicit Consent Modal (`modal-browser-consent`) และการโฟกัสปุ่ม `CANCEL` ก่อน
   - ตรวจสอบการปิดหน้าต่างด้วยปุ่ม Cancel และปุ่ม Esc
-  - ตรวจสอบการกด `ALLOW & TEST` ที่เรียก `select_browser_cookies`, อัปเดตสถานะป้ายเป็น `✓ ACTIVE: FIREFOX`, และแสดงข้อความชี้แจงผล
+  - ตรวจสอบการกด `CONTINUE` ที่เรียก `select_browser_cookies`, อัปเดตสถานะป้ายเป็น `✓ ACTIVE: FIREFOX`, และแสดงข้อความชี้แจงผล
   - ตรวจสอบการกด `REMOVE` เพื่อยกเลิกการเชื่อมต่อคุกกี้
+  - ตรวจสอบว่า `TEST AGAIN` เปิดหน้าต่างยินยอมก่อน และไม่เรียก `test_browser_cookies` จนกว่าจะกด Continue; กด Cancel แล้วแสดง "No cookies were read"; dropdown แสดง `not detected` / `installed, no profile found`
+- **Regression Tests จากการตรวจทาน (`tests/unit/test_browser_auth_fixes.py`, 2026-10-24):**
+  - ความล้มเหลวอื่นหลังอ่านคุกกี้ได้แล้ว (เช่น `Video unavailable`) ไม่ถูกนับเป็น `ERR_BROWSER_COOKIES_FAILED`
+  - `check_browser_cookies` ไม่ล้มเมื่อเกิดข้อผิดพลาดที่ไม่คาดคิด (เดิมเรียก `logger.warn` ที่ไม่มีอยู่)
+  - ข้อความเบราว์เซอร์ที่ไม่รองรับแสดงรายชื่อที่รองรับครบ และข้อความในหน้าต่างยินยอมตรงกับการทำงานจริง
+  - `real_binaries`: รัน `yt-dlp` 2026.10.21 จริงกับโปรไฟล์ Firefox จำลองที่สร้างในเทสต์ ได้สถานะ `readable` (1 คุกกี้) และ `profile_not_found` ตามคาด และผลลัพธ์ไม่มีค่าคุกกี้
+  - `[Unverified]` ยังไม่ได้ทดสอบกับเบราว์เซอร์จริงที่ลงชื่อเข้าใช้ YouTube
 
 ---
 

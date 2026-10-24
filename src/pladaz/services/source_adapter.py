@@ -31,6 +31,7 @@ from pladaz.domain.models import (
 )
 from pladaz.services.browser_auth import (
     BrowserCookieCheck,
+    CHECK_FAILED,
     CHECK_TIMEOUT,
     CHECK_UNSUPPORTED,
     CHECK_YTDLP_MISSING,
@@ -659,8 +660,8 @@ class DownloadSourceAdapter:
         except Exception as exc:
             safe_msg = redact_sensitive_text(str(exc))
             if self._logger:
-                self._logger.warn("DownloadSourceAdapter", f"Cookie check failed for {browser}: {safe_msg}")
-            return build_cookie_check("failed", browser)
+                self._logger.warning("DownloadSourceAdapter", f"Cookie check failed for {browser}: {safe_msg}")
+            return build_cookie_check(CHECK_FAILED, browser)
 
     def get_version(self, binary_path: Optional[Path] = None) -> Optional[str]:
         """Run `<binary_path> --version` and return the version string, or None if unavailable."""

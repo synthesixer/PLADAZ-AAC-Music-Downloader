@@ -916,6 +916,8 @@
         const opt = document.createElement("option");
         opt.value = b.key;
         const hints = [];
+        if (b.status === "not_detected") hints.push("not detected");
+        else if (b.status === "installed_no_profile") hints.push("installed, no profile found");
         if (b.is_default) hints.push("Default");
         if (b.key === recommendedKey) hints.push("Recommended");
         const suffix = hints.length > 0 ? ` (${hints.join(", ")})` : "";
@@ -928,6 +930,16 @@
       }
       if (useBtn) useBtn.disabled = false;
       if (testBtn) testBtn.disabled = false;
+    }
+
+    const anyAvailable = browsers.some((b) => b.status === "available");
+    const feedbackBox = document.getElementById("settings-browser-feedback");
+    if (detection && !anyAvailable && !configured.browser && feedbackBox && feedbackBox.classList.contains("hidden")) {
+      setBrowserFeedback(
+        "No supported browser with a sign-in profile was found on this PC.",
+        "Install Firefox (recommended), open it once and sign in to YouTube, then come back — or import a cookies.txt file below.",
+        true
+      );
     }
 
     const currentVal = selectEl.value;
@@ -978,8 +990,9 @@
     container.classList.remove("hidden");
   }
 
-  function openBrowserConsentModal(browserKey) {
+  function openBrowserConsentModal(browserKey, mode = "use") {
     const key = (browserKey || "").toLowerCase();
+    state.pendingConsentMode = mode;
     const candidate = state.browserDetection && state.browserDetection.browsers
       ? state.browserDetection.browsers.find((b) => b.key === key)
       : null;
@@ -993,6 +1006,7 @@
 
     const modal = document.getElementById("modal-browser-consent");
     if (modal) {
+      setBrowserFeedback(`Waiting for your confirmation before reading cookies from ${label}…`, "");
       openModal(modal.id);
       const cancelBtn = document.getElementById("browser-consent-cancel-btn");
       if (cancelBtn) cancelBtn.focus();
@@ -1001,6 +1015,7 @@
 
   function closeBrowserConsentModal() {
     state.pendingConsentBrowser = null;
+    state.pendingConsentMode = null;
     const modal = document.getElementById("modal-browser-consent");
     if (modal) closeModal(modal.id);
   }
@@ -1688,17 +1703,25 @@
 
     const consentCancelBtn = document.getElementById("browser-consent-cancel-btn");
     if (consentCancelBtn) {
-      consentCancelBtn.addEventListener("click", closeBrowserConsentModal);
+      consentCancelBtn.addEventListener("click", () => {
+        closeBrowserConsentModal();
+        setBrowserFeedback("Cancelled. No cookies were read.", "Nothing was changed.", false);
+      });
     }
 
     const consentContinueBtn = document.getElementById("browser-consent-continue-btn");
     if (consentContinueBtn) {
       consentContinueBtn.addEventListener("click", async () => {
         const chosen = state.pendingConsentBrowser;
+        const mode = state.pendingConsentMode;
         closeBrowserConsentModal();
         if (!chosen) return;
+        if (mode === "test") {
+          await runBrowserCookieTest(chosen);
+          return;
+        }
 
-        setBrowserFeedback("Verifying browser cookies with yt-dlp…", "PLADAZ is checking if cookies can be read without downloading.");
+        setBrowserFeedback("Reading cookies with yt-dlp…", "This only checks access. Nothing is downloaded.");
         const res = await window.PladazBridge.selectBrowserCookies(chosen);
         if (res && res.success) {
           state.browserCookies = {
@@ -1708,7 +1731,10 @@
           };
           if (res.config) state.config = res.config;
           const checkMsg = res.check ? res.check.message : "Cookies verified successfully.";
-          const checkStep = res.check ? res.check.next_step : "";
+          let checkStep = res.check ? res.check.next_step : "";
+          if (state.config && state.config.cookies_file_path) {
+            checkStep = `${checkStep} Note: a cookies.txt file is also set and PLADAZ uses it first. Remove it below to use this browser.`.trim();
+          }
           setBrowserFeedback(`✓ ${checkMsg}`, checkStep, false);
         } else {
           state.browserCookies = {
@@ -1727,23 +1753,27 @@
 
     const testBrowserBtn = document.getElementById("settings-test-browser-btn");
     if (testBrowserBtn) {
-      testBrowserBtn.addEventListener("click", async () => {
+      testBrowserBtn.addEventListener("click", () => {
         const sel = document.getElementById("settings-browser-select");
         const chosen = sel ? sel.value : (state.browserCookies && state.browserCookies.browser);
         if (!chosen) return;
-
-        setBrowserFeedback(`Testing cookies from ${chosen}…`, "Testing reading cookie count via yt-dlp.");
-        const res = await window.PladazBridge.testBrowserCookies(chosen);
-        if (res && res.success) {
-          const checkMsg = res.check ? res.check.message : "Cookies can be read.";
-          const checkStep = res.check ? res.check.next_step : "";
-          setBrowserFeedback(`✓ ${checkMsg}`, checkStep, false);
-        } else {
-          const errMsg = (res && res.check && res.check.message) || (res && res.error && res.error.message_en) || "Cookie test failed.";
-          const nextStep = (res && res.check && res.check.next_step) || "Check guidance or try another browser.";
-          setBrowserFeedback(`! ${errMsg}`, nextStep, true);
-        }
+        openBrowserConsentModal(chosen, "test");
       });
+    }
+
+    // Re-check cookie access without changing the saved browser (runs only after consent)
+    async function runBrowserCookieTest(chosen) {
+      setBrowserFeedback("Reading cookies with yt-dlp…", "This only checks access. Nothing is downloaded or saved.");
+      const res = await window.PladazBridge.testBrowserCookies(chosen);
+      if (res && res.success) {
+        const checkMsg = res.check ? res.check.message : "Cookies can be read.";
+        const checkStep = res.check ? res.check.next_step : "";
+        setBrowserFeedback(`✓ ${checkMsg}`, checkStep, false);
+      } else {
+        const errMsg = (res && res.check && res.check.message) || (res && res.error && res.error.message_en) || "Cookie test failed.";
+        const nextStep = (res && res.check && res.check.next_step) || "Choose another browser or import a cookies.txt file.";
+        setBrowserFeedback(`! ${errMsg}`, nextStep, true);
+      }
     }
 
     const removeBrowserBtn = document.getElementById("settings-remove-browser-btn");
