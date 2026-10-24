@@ -7,7 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased] - work after 1.0.0 (built into `dist/` from `main` at `a4ce579`, release candidate RC2)
+## [1.0.0] - 2026-10-24
+
+Approved by the owner for personal use (DEC-055). Built from `main` at `a4ce579`; `PLADAZ.exe` SHA-256 `AC31AA9A15187903C2E3792C352F1630F59B394251FA8C92580DA5025E4C601C`.
+Accepted limitation: the first start after a build took 5.45 s, over the 5 s target (later starts 2.88–3.19 s).
 
 ### Added
 - **Browser Authentication (DEC-052):** detect supported browsers (Firefox, Microsoft Edge, Google Chrome, Brave, Opera, Vivaldi, Chromium, Naver Whale) from the Windows registry and cookie-store presence, recommend one, and use `yt-dlp --cookies-from-browser` only after an explicit consent dialog. `cookies.txt` import stays as a fallback and takes priority when both are set.
@@ -28,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unrelated download failures are no longer reported as browser-cookie errors.
 - Accessibility: live-region announcements, progress bar semantics, names on icon buttons, Settings labels, dialog focus handling.
 
-## [1.0.0] - 2026-10-23
+## [1.0.0-RC1] - 2026-10-23
 
 ### Added
 - **Core Engine (Phase 2):**

@@ -4,7 +4,7 @@
 >
 > **ภาษา:** ไทย  
 > **ชื่อโครงการ:** PLADAZ  
-> **เวอร์ชันเอกสาร:** 2.7 (อ้างอิง `IMPLEMENT_PLAN.md` เวอร์ชัน 3.1)  
+> **เวอร์ชันเอกสาร:** 2.7 (อ้างอิง `IMPLEMENT_PLAN.md` เวอร์ชัน 3.2)  
 > **แพลตฟอร์มเป้าหมาย:** Windows 10 / 11  
 > **อุปกรณ์เป้าหมาย:** SNOWSKY ECHO DAP (Native `.m4a`)  
 > **ขอบเขต:** สถาปัตยกรรม, Interface ระหว่างโมดูล, Data Models, Data Flow & Event, Error Handling & Logging, Traceability Matrix ส่วน UI Design แยกอ้างอิงตาม `DEC-028`

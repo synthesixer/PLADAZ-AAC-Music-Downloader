@@ -5,7 +5,7 @@
 > **ชื่อโครงการ:** PLADAZ  
 > **อัปเดตล่าสุด:** 2026-10-24  
 > **เอกสารอ้างอิงหลัก:** [`Doc/IMPLEMENT_PLAN.md`](file:///e:/Doc/Code/randombullshit/PLADAZV2/Doc/IMPLEMENT_PLAN.md) (v2.5) และ [`Doc/SYSTEM_DESIGN.md`](file:///e:/Doc/Code/randombullshit/PLADAZV2/Doc/SYSTEM_DESIGN.md) (v2.3)  
-> **ระยะปัจจุบัน:** เสร็จสิ้น **Phase 0–4** และส่วนงานอัตโนมัติ/เอกสารของ **Phase 5 (QA & Release Readiness)** — รอผลการทดสอบบนฮาร์ดแวร์จริง (`TC-015`, Micro SD Card จริง, Clean Windows) และข้อความ Disclaimer จากเจ้าของโครงการ
+> **ระยะปัจจุบัน:** เสร็จสิ้น **Phase 0–5** — เจ้าของโครงการอนุมัติ Release `v1.0.0` สำหรับใช้ส่วนตัวแล้ว (2026-10-24, DEC-055; build `a4ce579`, `PLADAZ.exe` SHA-256 `AC31AA9A15187903C2E3792C352F1630F59B394251FA8C92580DA5025E4C601C`) ข้อจำกัดที่ยอมรับ: เวลาเปิดแอปครั้งแรก 5.45 วินาที (TC-001)
 
 ---
 
@@ -18,7 +18,7 @@
 | **Phase 2** | สร้างแกนระบบ (Core Backend & Unit/Integration Tests) | **เสร็จสิ้น** | พัฒนาแพ็กเกจ `pladaz` (`domain/` + 6 โมดูลแกนหลักใน `services/`) พร้อมสภาพแวดล้อม `venv` และชุดทดสอบ `pytest` 34 รายการ |
 | **Phase 3** | เชื่อมต่อกระบวนการเพลง (Download, Audio & Queue) | **เสร็จสิ้น** | พัฒนา `DownloadSourceAdapter` (`yt-dlp.exe`), `AudioProcessingService` (`ffmpeg.exe`), `HttpExternalMetadataFetcher` + `TemporaryExactMetadataMatcher`, `DownloadQueueManager`, `EventDispatcher`, `dto.py`, และ `BridgeAPI` |
 | **Phase 4** | พัฒนา Frontend, App Shell และ Packaging | **เสร็จสิ้น** | พัฒนา `paths.py`, `main.py` (`pywebview` `1280×820`), `ui/js/bridge.js`, `ui/js/app.js`, `ui/index.html` ครบ 19 บอร์ดที่อนุมัติ (`01`–`11`, `13`–`20`), พัฒนาระบบ Browser Authentication (Option C — DEC-052) ตรวจจับเบราว์เซอร์อัตโนมัติพร้อมหน้าต่างยืนยันสิทธิ์ `modal-browser-consent`, แก้ไขข้อบกพร่องจากการตรวจสอบ QA ทั้งหมด (Conflict Prompt recovery, การแจ้งเตือนคำสั่งล้มเหลว, การตรวจพาธใน Backend, การอัปเดต DOM เฉพาะแถว, สรุปผลเฉพาะรอบปัจจุบัน และความตรงปกตาม Design Direction), และบิลด์ `dist/PLADAZ/PLADAZ.exe` โหมด `--onedir` |
-| **Phase 5** | ตรวจสอบและเตรียมใช้งาน (QA & Release) | **ดำเนินการส่วนอัตโนมัติเสร็จสิ้น / รอผลฮาร์ดแวร์จริงจากผู้ใช้** | ติดตั้งสคริปต์ Regression [`scripts/run_tests.ps1`](file:///e:/Doc/Code/randombullshit\PLADAZV2\scripts\run_tests.ps1) และสคริปต์ตรวจการ์ด [`scripts/verify_sd_card.py`](file:///e:/Doc/Code/randombullshit\PLADAZV2\scripts\verify_sd_card.py), เพิ่มชุดทดสอบ E2E, Frontend JS และ Browser Authentication รวม **105 รายการ (รันออฟไลน์ผ่าน 104/104 รายการ, ข้ามชุดทดสอบเน็ตจริง 1 รายการที่รอ URL; 2026-10-24)**, และจัดทำ `USER_GUIDE.md`, `KNOWN_LIMITATIONS.md`, `TEST_REPORT.md`, `RELEASE_READINESS_REPORT.md` |
+| **Phase 5** | ตรวจสอบและเตรียมใช้งาน (QA & Release) | **เสร็จสิ้น — อนุมัติ Release `v1.0.0` สำหรับใช้ส่วนตัว (2026-10-24, DEC-055)** | ติดตั้งสคริปต์ Regression [`scripts/run_tests.ps1`](file:///e:/Doc/Code/randombullshit\PLADAZV2\scripts\run_tests.ps1) และสคริปต์ตรวจการ์ด [`scripts/verify_sd_card.py`](file:///e:/Doc/Code/randombullshit\PLADAZV2\scripts\verify_sd_card.py), เพิ่มชุดทดสอบ E2E, Frontend JS และ Browser Authentication รวม **105 รายการ (รันออฟไลน์ผ่าน 104/104 รายการ, ข้ามชุดทดสอบเน็ตจริง 1 รายการที่รอ URL; 2026-10-24)**, และจัดทำ `USER_GUIDE.md`, `KNOWN_LIMITATIONS.md`, `TEST_REPORT.md`, `RELEASE_READINESS_REPORT.md` |
 
 ---
 
@@ -96,7 +96,7 @@
    - ใส่ข้อความ Personal Use Disclaimer และเพิ่ม `scripts/measure_performance.py` ตามเกณฑ์ TBA-023 ที่กำหนดใน DEC-054 — commit `a4ce579`
    - Merge `ux/audit-fixes` เข้า `main` และ build `dist\PLADAZ\` ใหม่จาก `main` ที่ commit `a4ce579`
    - ผลทดสอบเครื่องจริง (TC-008, TC-015, TC-019, TC-028, Windows สะอาด): ผู้ใช้รายงาน Pass (2026-10-24) — ทดสอบในโหมดพัฒนา (dev) / ไม่ระบุ build และไม่มีรายละเอียดอุปกรณ์ (รุ่น/เฟิร์มแวร์ ECHO, ความจุ/ระบบไฟล์การ์ด, เครื่อง Windows)
-   - TC-001 = Fail ที่เกณฑ์เวลาเปิดแอปครั้งแรก (5.45 วินาที > 5 วินาที) รอเจ้าของโครงการตัดสิน
+   - TC-001 = Fail ที่เกณฑ์เวลาเปิดแอปครั้งแรก (5.45 วินาที > 5 วินาที) — เจ้าของโครงการยอมรับเป็นข้อจำกัด และอนุมัติ Release `v1.0.0` สำหรับใช้ส่วนตัว (DEC-055)
 
 ---
 
@@ -136,7 +136,7 @@
 
 | TC ID | ชื่อการทดสอบ | สถานะปัจจุบัน | หลักฐาน / หมายเหตุ |
 |---|---|:---:|---|
-| **TC-001** | เปิดใช้งานบน Windows | **Fail** | การทำงานบน Windows สะอาด: ผู้ใช้รายงาน Pass (2026-10-24) — ทดสอบในโหมดพัฒนา (dev) / ไม่ระบุ build และไม่มีรายละเอียดอุปกรณ์ (รุ่น/เฟิร์มแวร์ ECHO, ความจุ/ระบบไฟล์การ์ด, เครื่อง Windows); เกณฑ์ตัวเลข DEC-054: `scripts/measure_performance.py` กับ build `a4ce579` (2026-10-24): เปิดแอป (`--smoke-test`) ครั้งแรกหลัง build **5.45 วินาที** (เกณฑ์ ≤ 5 วินาที → ไม่ผ่าน), ครั้งถัดมา 3.01 / 3.19 / 2.88 วินาที; ขั้นหลังดาวน์โหลดเพลง 5 นาที: remux 0.28 วินาที, encode 7.81 วินาที (เกณฑ์ ≤ 30 วินาที → ผ่าน, คัดลอกลงโฟลเดอร์ชั่วคราวในเครื่อง ไม่ใช่การ์ดจริง) |
+| **TC-001** | เปิดใช้งานบน Windows | **Fail** | การทำงานบน Windows สะอาด: ผู้ใช้รายงาน Pass (2026-10-24) — ทดสอบในโหมดพัฒนา (dev) / ไม่ระบุ build และไม่มีรายละเอียดอุปกรณ์ (รุ่น/เฟิร์มแวร์ ECHO, ความจุ/ระบบไฟล์การ์ด, เครื่อง Windows); เกณฑ์ตัวเลข DEC-054: `scripts/measure_performance.py` กับ build `a4ce579` (2026-10-24): เปิดแอป (`--smoke-test`) ครั้งแรกหลัง build **5.45 วินาที** (เกณฑ์ ≤ 5 วินาที → ไม่ผ่าน), ครั้งถัดมา 3.01 / 3.19 / 2.88 วินาที; ขั้นหลังดาวน์โหลดเพลง 5 นาที: remux 0.28 วินาที, encode 7.81 วินาที (เกณฑ์ ≤ 30 วินาที → ผ่าน, คัดลอกลงโฟลเดอร์ชั่วคราวในเครื่อง ไม่ใช่การ์ดจริง) — **เจ้าของโครงการยอมรับเป็นข้อจำกัด (DEC-055, 2026-10-24)** |
 | **TC-002** | สร้างเส้นทางโฟลเดอร์ (`Album Artist` / `Album`) | **Pass** | `test_tc002_build_target_path_with_album_artist_and_album` |
 | **TC-003** | ไม่ใช้ `Track Artist` เป็นโฟลเดอร์หลัก | **Pass** | `test_tc003_folder_uses_album_artist_not_track_artist` |
 | **TC-004** | รองรับ Metadata หลัก (`Title`, `Track Artist`, `Album`, `Album Artist`) | **Pass** | `test_tc004_core_metadata_tags_written_and_verified_with_uppercase_art_atom` |
