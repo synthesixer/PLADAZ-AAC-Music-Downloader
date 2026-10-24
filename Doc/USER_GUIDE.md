@@ -38,7 +38,7 @@ PLADAZ เป็นโปรแกรมแบบ **Portable (`--onedir`)** ไ�
 2. ระบบจะแสดงหน้าต่าง **Personal Use Disclaimer** (บอร์ด 04):
    - อ่านข้อกำหนดการใช้งานสำหรับเก็บสำรองข้อมูลและฟังเพลงส่วนบุคคลบนเครื่องเล่น SNOWSKY ECHO DAP
    - ติ๊กถูกที่ช่อง **"I have read and accept these terms — for personal use only."**
-   - กดปุ่ม **`ACCEPT & CONTINUE`** เพื่อเข้าสู่หน้าจอหลัก (หรือกด **`QUIT APPLICATION`** หากไม่ยอมรับ)
+   - กดปุ่ม **`ACCEPT & CONTINUE`** เพื่อเข้าสู่หน้าจอหลัก (หรือกด **`QUIT`** หากไม่ยอมรับ)
    *(การกดยอมรับจะบันทึกสถานะ `"disclaimer_accepted": true` ลงใน `config.json` และจะไม่แสดงขึ้นมาอีกในการเปิดครั้งต่อไป)*
 
 ---

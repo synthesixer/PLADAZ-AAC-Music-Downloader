@@ -4,11 +4,11 @@
 >
 > **ภาษา:** ไทย  
 > **ชื่อโครงการ:** PLADAZ  
-> **เวอร์ชันเอกสาร:** 2.6 (อ้างอิง `IMPLEMENT_PLAN.md` เวอร์ชัน 3.0)  
+> **เวอร์ชันเอกสาร:** 2.7 (อ้างอิง `IMPLEMENT_PLAN.md` เวอร์ชัน 3.1)  
 > **แพลตฟอร์มเป้าหมาย:** Windows 10 / 11  
 > **อุปกรณ์เป้าหมาย:** SNOWSKY ECHO DAP (Native `.m4a`)  
 > **ขอบเขต:** สถาปัตยกรรม, Interface ระหว่างโมดูล, Data Models, Data Flow & Event, Error Handling & Logging, Traceability Matrix ส่วน UI Design แยกอ้างอิงตาม `DEC-028`
-> **หัวข้อที่คงสถานะ TBA:** `TBA-023`, `TBA-026`, `TBA-027` (ดูหัวข้อ 6)  
+> **หัวข้อที่คงสถานะ TBA:** `TBA-026`, `TBA-027` (ดูหัวข้อ 6); `TBA-023` กำหนดแล้วใน DEC-054  
 > **สถานะการตรวจสอบ:** พัฒนาครบทั้ง Phase 2 (แกนระบบ), Phase 3 (กระบวนการเพลงและคิว), และ Phase 4 (Frontend 19 บอร์ด, App Shell, และแพ็กเกจ PyInstaller `--onedir`) รันชุดทดสอบ `pytest` ผ่านแล้ว **54 รายการ** (ดูรายละเอียดใน [`PROJECT_PROGRESS.md`](file:///e:/Doc/Code/randombullshit/PLADAZV2/Doc/PROJECT_PROGRESS.md)) ส่วนการทดสอบบน Clean Windows และการทดสอบบนอุปกรณ์จริง SNOWSKY ECHO DAP รอดำเนินการใน Phase 5
 
 ---
@@ -755,7 +755,7 @@ IR-019 และ TC-019 ต้องการให้แจ้งเตือ�
 | IR | DEC / TBA ที่เกี่ยวข้อง | โมดูลหลัก | Test Cases |
 |---|---|---|---|
 | IR-001 ชื่อแอป | DEC-001, DEC-026 | `main.py`, `ui/` | TC-001 |
-| IR-002 Windows | DEC-002, DEC-017, DEC-018 | `main.py`, `pladaz.spec` | TC-001 (เกณฑ์ตัวเลข = TBA-023) |
+| IR-002 Windows | DEC-002, DEC-017, DEC-018 | `main.py`, `pladaz.spec` | TC-001 (เกณฑ์ตัวเลขตาม DEC-054, วัดด้วย `scripts/measure_performance.py`) |
 | IR-003 ดาวน์โหลดเพลง | DEC-006, DEC-025 | `DownloadSourceAdapter`, `DownloadQueueManager` | TC-018 |
 | IR-004 AAC | DEC-003, DEC-006, DEC-008, DEC-033 | `AudioProcessingService`, `OutputValidator` | TC-014, 015, 020, 024 |
 | IR-005 ปกอัลบั้ม | DEC-008, DEC-021, DEC-031 | `MetadataAlbumArtService`, `OutputValidator` | TC-007, 015, 020, 022, 023 |
@@ -809,7 +809,7 @@ Open Decision ทั้งหมดจากรุ่น 2.0 ปิดแล้�
 | OD-10 | ขอบเขต Apply to all | อัลบั้ม = โฟลเดอร์ปลายทางเดียวกัน; คิว = ทั้งรอบการรันรวมงานที่เพิ่มทีหลัง | DEC-044 |
 
 **ค่าที่ยังเป็น TBA (ต้องกำหนดก่อนเขียนส่วนที่เกี่ยวข้อง):**
-- `TBA-023` เกณฑ์ตัวเลขประสิทธิภาพและขนาดไฟล์
+- ~~`TBA-023` เกณฑ์ตัวเลขประสิทธิภาพและขนาดไฟล์~~ — กำหนดแล้วใน DEC-054
 - `TBA-026` วิธีเทียบชื่อเพลง/ศิลปิน และสตริง User-Agent ข้อควรรู้: ชื่อวิดีโอ YouTube มักเป็นรูป "Artist - Title (Official Video)" ถ้าบังคับให้ตรงกันเป๊ะ การเติมข้อมูลจาก iTunes/MusicBrainz จะเกิดน้อยมาก (ไม่ได้เสนอให้ผ่อนเกณฑ์ เป็นการตัดสินใจของผู้ใช้)
 - `TBA-027` bitrate ของ fallback encode
 - ความถี่ในการตรวจการ์ด (DEC-041) และแหล่งดาวน์โหลด/วิธีตรวจเวอร์ชันของ `yt-dlp.exe` (DEC-038) ไม่ได้ระบุใน Plan กำหนดตอนพัฒนา

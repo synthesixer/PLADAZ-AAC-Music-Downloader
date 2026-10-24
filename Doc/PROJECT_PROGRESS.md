@@ -87,13 +87,16 @@
    - ปรับแต่ง `DownloadSourceAdapter.update_ytdlp()` ให้ทำการ in-place update ตรงตำแหน่งติดตั้ง binary ผ่าน atomic swap (`os.replace`)
    - ต่อสาย `TemporaryExactMetadataMatcher` และ `HttpExternalMetadataFetcher` เข้ากับ `MetadataAlbumArtService` ใน `main.py` พร้อมเพิ่ม HTTP fallback ดาวน์โหลดภาพปกจาก YouTube stream `thumbnails` ทำให้ M4A มีภาพปก 800×800 JPEG ฝังใน atom `covr` เสมอ
    - สร้างไฟล์ `.gitignore` เพื่อป้องกันการ commit binaries ขนาดใหญ่ (`*.exe`, `dist/`, `build/`) เข้า Git โดยอาศัย GitHub Releases ในการแจกจ่าย
-   - บิลด์ `dist\PLADAZ\PLADAZ.exe` ล่าสุดด้วย PyInstaller (จาก commit `ba20fd7`, 2026-10-24, smoke test exit code `0`): ขนาด `5,900,807` ไบต์, SHA-256: `8FA05A7DF0FB8A825863B5A74D95543D12BD37E9606053F70EB66E80CC9F5323` (รายละเอียดและแฮชของ `yt-dlp.exe` / `ffmpeg.exe` ใน `TEST_REPORT.md` หัวข้อ 5.4)
+   - บิลด์ `dist\PLADAZ\PLADAZ.exe` ล่าสุดด้วย PyInstaller (จาก branch `main` ที่ commit `a4ce579`, 2026-10-24, smoke test exit code `0`): ขนาด `5,917,943` ไบต์, SHA-256: `AC31AA9A15187903C2E3792C352F1630F59B394251FA8C92580DA5025E4C601C` (รายละเอียดและแฮชของ `yt-dlp.exe` / `ffmpeg.exe` ใน `TEST_REPORT.md` หัวข้อ 5.4)
 
 9. **งานหลังรายงานตรวจสอบขั้นสุดท้าย (2026-10-24):**
    - แก้ข้อค้นพบจากรายงานตรวจสอบโค้ดตามการตัดสินใจของเจ้าของโครงการ (DEC-051): ปิดแอปแบบรอ Worker, คัดลอกผ่าน `.pladaz-tmp` ทุกครั้ง, hook `pre-commit` สำหรับ regression (TC-021) — commit `ba20fd7`
    - Browser Authentication แบบ Option C (DEC-052) — commit `25aafb6` และตรวจทานเทียบข้อกำหนดแล้วแก้จุดที่ขาด (ขอความยินยอมก่อน TEST AGAIN, ข้อความยินยอมที่ตรงความจริง, การแยกประเภทข้อผิดพลาด) — commit `51615c7`
    - แก้ข้อค้นพบจากรายงานตรวจ UX/UI ตามการตัดสินใจของเจ้าของโครงการ (DEC-053): สี `#CC2982`, ปรับรูปลักษณ์ตาม Design Direction, Conflict Prompt, Settings บันทึกอัตโนมัติ, วางหลายลิงก์, การเข้าถึง — commit `65b866e`
-   - หมายเหตุ: `dist\PLADAZ\` ยังเป็น build จาก commit `ba20fd7` ยังไม่มีงานสามรายการข้างต้น ต้อง build ใหม่และอัปเดต SHA-256 ก่อนทดสอบบนเครื่องจริง
+   - ใส่ข้อความ Personal Use Disclaimer และเพิ่ม `scripts/measure_performance.py` ตามเกณฑ์ TBA-023 ที่กำหนดใน DEC-054 — commit `a4ce579`
+   - Merge `ux/audit-fixes` เข้า `main` และ build `dist\PLADAZ\` ใหม่จาก `main` ที่ commit `a4ce579`
+   - ผลทดสอบเครื่องจริง (TC-008, TC-015, TC-019, TC-028, Windows สะอาด): ผู้ใช้รายงาน Pass (2026-10-24) — ทดสอบในโหมดพัฒนา (dev) / ไม่ระบุ build และไม่มีรายละเอียดอุปกรณ์ (รุ่น/เฟิร์มแวร์ ECHO, ความจุ/ระบบไฟล์การ์ด, เครื่อง Windows)
+   - TC-001 = Fail ที่เกณฑ์เวลาเปิดแอปครั้งแรก (5.45 วินาที > 5 วินาที) รอเจ้าของโครงการตัดสิน
 
 ---
 
@@ -133,25 +136,25 @@
 
 | TC ID | ชื่อการทดสอบ | สถานะปัจจุบัน | หลักฐาน / หมายเหตุ |
 |---|---|:---:|---|
-| **TC-001** | เปิดใช้งานบน Windows | **Blocked** | รัน `dist\PLADAZ\PLADAZ.exe --smoke-test` ผ่าน (`ExitCode=0`); แต่เกณฑ์ตัวเลขประสิทธิภาพ/ขนาดไฟล์ยังติด `TBA-023` และรอผลทดสอบบนเครื่อง Windows สะอาด |
+| **TC-001** | เปิดใช้งานบน Windows | **Fail** | การทำงานบน Windows สะอาด: ผู้ใช้รายงาน Pass (2026-10-24) — ทดสอบในโหมดพัฒนา (dev) / ไม่ระบุ build และไม่มีรายละเอียดอุปกรณ์ (รุ่น/เฟิร์มแวร์ ECHO, ความจุ/ระบบไฟล์การ์ด, เครื่อง Windows); เกณฑ์ตัวเลข DEC-054: `scripts/measure_performance.py` กับ build `a4ce579` (2026-10-24): เปิดแอป (`--smoke-test`) ครั้งแรกหลัง build **5.45 วินาที** (เกณฑ์ ≤ 5 วินาที → ไม่ผ่าน), ครั้งถัดมา 3.01 / 3.19 / 2.88 วินาที; ขั้นหลังดาวน์โหลดเพลง 5 นาที: remux 0.28 วินาที, encode 7.81 วินาที (เกณฑ์ ≤ 30 วินาที → ผ่าน, คัดลอกลงโฟลเดอร์ชั่วคราวในเครื่อง ไม่ใช่การ์ดจริง) |
 | **TC-002** | สร้างเส้นทางโฟลเดอร์ (`Album Artist` / `Album`) | **Pass** | `test_tc002_build_target_path_with_album_artist_and_album` |
 | **TC-003** | ไม่ใช้ `Track Artist` เป็นโฟลเดอร์หลัก | **Pass** | `test_tc003_folder_uses_album_artist_not_track_artist` |
 | **TC-004** | รองรับ Metadata หลัก (`Title`, `Track Artist`, `Album`, `Album Artist`) | **Pass** | `test_tc004_core_metadata_tags_written_and_verified_with_uppercase_art_atom` |
 | **TC-005** | รองรับลำดับแทร็กและแผ่น (`trkn`, `disk`) | **Pass** | `test_tc005_track_number_and_disc_number_atoms` |
 | **TC-006** | รองรับ `Year` และ `Genre` (`©day`, `©gen`) | **Pass** | `test_tc006_year_and_genre_atoms` |
 | **TC-007** | รองรับ `Album Art` (800×800 JPEG ใน `covr`) | **Pass** | `test_tc007_process_cover_800x800_jpeg_and_embed_in_covr_atom` |
-| **TC-008** | เลือกปลายทางบนพื้นที่จัดเก็บข้อมูล | **Not Run** | ส่วนซอฟต์แวร์ (`test_tc008` และ `select_detected_drive`) ผ่านแล้ว; รอผลทดสอบกับการ์ด Micro SD จริงจากผู้ใช้ |
+| **TC-008** | เลือกปลายทางบนพื้นที่จัดเก็บข้อมูล | **Pass** | ผู้ใช้รายงาน Pass (2026-10-24) — ทดสอบในโหมดพัฒนา (dev) / ไม่ระบุ build และไม่มีรายละเอียดอุปกรณ์ (รุ่น/เฟิร์มแวร์ ECHO, ความจุ/ระบบไฟล์การ์ด, เครื่อง Windows); ชุดทดสอบอัตโนมัติจำลองผ่าน |
 | **TC-009** | ปลายทางไม่พร้อมใช้งาน | **Pass** | `test_tc009_destination_disconnected_or_read_only_raises_error` คืน `ERR_SDCARD_DISCONNECTED` |
 | **TC-010** | พื้นที่ไม่เพียงพอ | **Pass** | `test_tc010_insufficient_free_space_raises_error` คืน `ERR_SDCARD_INSUFFICIENT_SPACE` |
 | **TC-011** | ไม่มี Metadata บางฟิลด์ | **Pass** | ผ่านทั้งส่วนแท็ก (`test_metadata_rules.py`) และส่วนโฟลเดอร์ `'Unknown Artist'` (`test_folder_organizer.py`) |
 | **TC-012** | ชื่อโฟลเดอร์มีอักขระต้องห้าม | **Pass** | `test_tc012_windows_forbidden_characters_replaced_with_underscore` |
 | **TC-013** | นโยบายจัดการไฟล์ซ้ำ (Overwrite / Skip / Keep Both ก่อนดาวน์โหลดเสียง) | **Pass** | `test_tc013_conflict_prompt_before_audio_download_overwrite_skip_and_keep_both` และ `test_frontend_js.py` |
 | **TC-014** | ตรวจสอบไฟล์ผลลัพธ์ | **Pass** | `test_tc014_valid_aac_lc_m4a_with_metadata_and_cover_passes` |
-| **TC-015** | อ่านไฟล์บนเครื่องเป้าหมาย (SNOWSKY ECHO DAP) | **Not Run** | ต้องทดสอบด้วยมือบนเครื่องเล่นจริงโดยผู้ใช้ตาม Checklist F |
+| **TC-015** | อ่านไฟล์บนเครื่องเป้าหมาย (SNOWSKY ECHO DAP) | **Pass** | ผู้ใช้รายงาน Pass (2026-10-24) — ทดสอบในโหมดพัฒนา (dev) / ไม่ระบุ build และไม่มีรายละเอียดอุปกรณ์ (รุ่น/เฟิร์มแวร์ ECHO, ความจุ/ระบบไฟล์การ์ด, เครื่อง Windows); ชุดทดสอบอัตโนมัติจำลองผ่าน |
 | **TC-016** | การยกเลิก/ความล้มเหลวกลางทาง (`Cancel` → `ERR_TASK_CANCELLED`) | **Pass** | `test_tc016_cancel_mid_download_cleans_temp_and_sets_failed_err_task_cancelled` และ `test_frontend_js.py` |
 | **TC-017** | การบันทึกข้อผิดพลาดลง Log | **Pass** | `test_tc017_error_logging_contains_required_diagnostic_fields` |
 | **TC-018** | การทำงานของ Download Queue (`Queued` → `Downloading` → `Completed`/`Failed`) | **Pass** | `test_tc018_download_queue_sequential_state_transitions` และ `test_frontend_js.py` |
-| **TC-019** | การตรวจจับการ์ดและการถอด Micro SD Card กลางคัน | **Not Run** | การทดสอบจำลองอัตโนมัติผ่านแล้ว; รอผลทดสอบดึงการ์ดจริงโดยผู้ใช้ตาม Checklist E |
+| **TC-019** | การตรวจจับการ์ดและการถอด Micro SD Card กลางคัน | **Pass** | ผู้ใช้รายงาน Pass (2026-10-24) — ทดสอบในโหมดพัฒนา (dev) / ไม่ระบุ build และไม่มีรายละเอียดอุปกรณ์ (รุ่น/เฟิร์มแวร์ ECHO, ความจุ/ระบบไฟล์การ์ด, เครื่อง Windows); ชุดทดสอบอัตโนมัติจำลองผ่าน |
 | **TC-020** | การตรวจสอบไฟล์ด้วย `OutputValidator` | **Pass** | `test_tc020_output_validator_rejects_corrupt_non_aac_and_missing_title_files` |
 | **TC-021** | Automated Regression Testing Pipeline | **Pass** | `scripts/run_tests.ps1` รันชุดทดสอบออฟไลน์ 58 รายการผ่านครบ และพิสูจน์การจับ Regression ได้จริง |
 | **TC-022** | ไม่พบปกอัลบั้ม (สวิตซ์ค่าเริ่มต้น `require_cover=False`) | **Pass** | `test_tc022_missing_cover_with_default_switch_passes_with_warning` |
@@ -160,8 +163,8 @@
 | **TC-025** | ชื่อลงท้ายด้วยจุด/ช่องว่าง, อักขระควบคุม และชื่อสงวน | **Pass** | `test_tc025_trailing_dots_spaces_control_chars_and_reserved_names_on_windows` |
 | **TC-026** | เกณฑ์ยอมรับผลค้นหา iTunes/MusicBrainz (`DEC-035`) | **Blocked** | โครงสร้าง `TemporaryExactMetadataMatcher` ทำงานได้ถูกต้อง แต่อัลกอริทึมเทียบชื่อสุดท้ายและ `User-Agent` ของ MusicBrainz ยังติด `TBA-026` |
 | **TC-027** | เส้นทางยาวเกินเพดาน Windows `MAX_PATH` (`> 259` อักขระ) | **Pass** | `test_tc027_path_exceeding_windows_max_path_raises_err_path_too_long` |
-| **TC-028** | Overwrite แล้วการ์ดหลุดกลางคัน (`DEC-040`) | **Not Run** | การทดสอบจำลองอัตโนมัติผ่านแล้ว; รอผลทดสอบกับการ์ดจริงโดยผู้ใช้ตาม Checklist E |
-| **TC-029** | Personal Use Disclaimer | **Blocked** | กลไกบันทึก `disclaimer_accepted` ผ่านการทดสอบอัตโนมัติแล้ว แต่ข้อความจริงในบอร์ด 04 ยังเป็น Placeholder รอเจ้าของโครงการระบุ (`TBA-023`) |
+| **TC-028** | Overwrite แล้วการ์ดหลุดกลางคัน (`DEC-040`) | **Pass** | ผู้ใช้รายงาน Pass (2026-10-24) — ทดสอบในโหมดพัฒนา (dev) / ไม่ระบุ build และไม่มีรายละเอียดอุปกรณ์ (รุ่น/เฟิร์มแวร์ ECHO, ความจุ/ระบบไฟล์การ์ด, เครื่อง Windows); ชุดทดสอบอัตโนมัติจำลองผ่าน |
+| **TC-029** | Personal Use Disclaimer | **Pass** | ข้อความ Disclaimer ฉบับใช้งานอยู่ในบอร์ด 04 แล้ว (DEC-054) และกลไกบันทึก `disclaimer_accepted` ผ่านการทดสอบอัตโนมัติ |
 | **TC-030** | การจัดการ `config.json` และ `history.json` | **Pass** | `test_tc030a_config_and_history_normal_read_write` และ `test_tc030b_corrupted_config_and_history_recovery` |
 | **TC-031** | การอัปเดตโมดูล `yt-dlp.exe` | **Pass** | `test_tc031_update_ytdlp_success_and_failure_rollback` |
 | **TC-032** | ความเป็นส่วนตัวของ `cookies.txt` ใน Logging | **Pass** | `test_tc032_cookies_and_tokens_never_appear_in_logs_or_structured_error` |
@@ -178,6 +181,6 @@
 4. **`DEFAULT_SD_POLL_INTERVAL_SEC = 2.0`** (2.0 วินาที) ใน [`src/pladaz/services/queue_manager.py`](file:///e:/Doc/Code/randombullshit/PLADAZV2/src/pladaz/services/queue_manager.py#L39)
 
 ### 7.2 หัวข้อที่ยังคงสถานะ `TBA` อย่างเคร่งครัด (ไม่ได้คาดเดาหรือเติมค่าเอง)
-1. **`TBA-023`:** เกณฑ์ตัวเลขด้านประสิทธิภาพและขนาดไฟล์สูงสุดที่ยอมรับได้ รวมถึงข้อความจริงของ Personal Use Disclaimer
+1. ~~**`TBA-023`:**~~ กำหนดแล้วใน DEC-054 (เปิดแอป ≤ 5 วินาที, ขั้นหลังดาวน์โหลด ≤ 30 วินาทีต่อเพลง 5 นาที) และข้อความ Disclaimer ใส่แล้ว
 2. **`TBA-026`:** รายละเอียดวิธีเทียบชื่อเพลงและศิลปินกับผลค้นหา iTunes/MusicBrainz (ปัจจุบันใช้ [`TemporaryExactMetadataMatcher`](file:///e:/Doc/Code/randombullshit/PLADAZV2/src/pladaz/services/metadata_matcher.py#L26-L46) ที่ติดป้ายชั่วคราว) และสตริง `User-Agent` สำหรับ MusicBrainz (รับจากการตั้งค่า ไม่แต่งข้อมูลติดต่อผู้พัฒนาเอง)
 3. **`TBA-027`:** ค่า Bitrate สำหรับกรณี Fallback Encode เป็น AAC-LC ด้วย FFmpeg (ปัจจุบันพารามิเตอร์ `fallback_bitrate` ใน [`AudioProcessingService`](file:///e:/Doc/Code/randombullshit/PLADAZV2/src/pladaz/services/audio_processor.py#L46) มีค่าเริ่มต้นเป็น `None` ไม่ส่ง `-b:a`)

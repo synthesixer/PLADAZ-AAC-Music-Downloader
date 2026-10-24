@@ -7,13 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased] - work after 1.0.0 (not yet built into `dist/`)
+## [Unreleased] - work after 1.0.0 (built into `dist/` from `main` at `a4ce579`, release candidate RC2)
 
 ### Added
 - **Browser Authentication (DEC-052):** detect supported browsers (Firefox, Microsoft Edge, Google Chrome, Brave, Opera, Vivaldi, Chromium, Naver Whale) from the Windows registry and cookie-store presence, recommend one, and use `yt-dlp --cookies-from-browser` only after an explicit consent dialog. `cookies.txt` import stays as a fallback and takes priority when both are set.
 - **Multi-link add (DEC-053):** the link box accepts one link per line; `enqueue_urls` processes every line and returns `failed_lines`, and only failed lines stay in the box.
 - Clear History confirmation dialog; reasons shown under a disabled Start/Resume button.
 - Regression hooks: git `pre-commit` and `pre-push` run `scripts/run_tests.ps1` (network tests excluded).
+- Personal Use Disclaimer text on first launch (DEC-054; wording delegated by the owner).
+- `scripts/measure_performance.py` for the TBA-023 criteria set in DEC-054 (start ≤ 5 s, post-download stages ≤ 30 s per 5-minute track).
 
 ### Changed
 - **UX/UI (DEC-053):** action pink `#CC2982` (white text 5.0:1); lavender page bezels with Now Processing as the only pink bezel; pixel-window style for system dialogs; Conflict dialog with Keep Both as the primary action; Settings save automatically.
