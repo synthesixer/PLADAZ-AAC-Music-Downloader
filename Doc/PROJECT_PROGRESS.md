@@ -18,7 +18,7 @@
 | **Phase 2** | สร้างแกนระบบ (Core Backend & Unit/Integration Tests) | **เสร็จสิ้น** | พัฒนาแพ็กเกจ `pladaz` (`domain/` + 6 โมดูลแกนหลักใน `services/`) พร้อมสภาพแวดล้อม `venv` และชุดทดสอบ `pytest` 34 รายการ |
 | **Phase 3** | เชื่อมต่อกระบวนการเพลง (Download, Audio & Queue) | **เสร็จสิ้น** | พัฒนา `DownloadSourceAdapter` (`yt-dlp.exe`), `AudioProcessingService` (`ffmpeg.exe`), `HttpExternalMetadataFetcher` + `TemporaryExactMetadataMatcher`, `DownloadQueueManager`, `EventDispatcher`, `dto.py`, และ `BridgeAPI` |
 | **Phase 4** | พัฒนา Frontend, App Shell และ Packaging | **เสร็จสิ้น** | พัฒนา `paths.py`, `main.py` (`pywebview` `1280×820`), `ui/js/bridge.js`, `ui/js/app.js`, `ui/index.html` ครบ 19 บอร์ดที่อนุมัติ (`01`–`11`, `13`–`20`), พัฒนาระบบ Browser Authentication (Option C — DEC-052) ตรวจจับเบราว์เซอร์อัตโนมัติพร้อมหน้าต่างยืนยันสิทธิ์ `modal-browser-consent`, แก้ไขข้อบกพร่องจากการตรวจสอบ QA ทั้งหมด (Conflict Prompt recovery, การแจ้งเตือนคำสั่งล้มเหลว, การตรวจพาธใน Backend, การอัปเดต DOM เฉพาะแถว, สรุปผลเฉพาะรอบปัจจุบัน และความตรงปกตาม Design Direction), และบิลด์ `dist/PLADAZ/PLADAZ.exe` โหมด `--onedir` |
-| **Phase 5** | ตรวจสอบและเตรียมใช้งาน (QA & Release) | **ดำเนินการส่วนอัตโนมัติเสร็จสิ้น / รอผลฮาร์ดแวร์จริงจากผู้ใช้** | ติดตั้งสคริปต์ Regression [`scripts/run_tests.ps1`](file:///e:/Doc/Code/randombullshit\PLADAZV2\scripts\run_tests.ps1) และสคริปต์ตรวจการ์ด [`scripts/verify_sd_card.py`](file:///e:/Doc/Code/randombullshit\PLADAZV2\scripts\verify_sd_card.py), เพิ่มชุดทดสอบ E2E, Frontend JS และ Browser Authentication รวม **86 รายการ (รันออฟไลน์ผ่าน 85/85 รายการ, ข้ามชุดทดสอบเน็ตจริง 1 รายการที่รอ URL)**, และจัดทำ `USER_GUIDE.md`, `KNOWN_LIMITATIONS.md`, `TEST_REPORT.md`, `RELEASE_READINESS_REPORT.md` |
+| **Phase 5** | ตรวจสอบและเตรียมใช้งาน (QA & Release) | **ดำเนินการส่วนอัตโนมัติเสร็จสิ้น / รอผลฮาร์ดแวร์จริงจากผู้ใช้** | ติดตั้งสคริปต์ Regression [`scripts/run_tests.ps1`](file:///e:/Doc/Code/randombullshit\PLADAZV2\scripts\run_tests.ps1) และสคริปต์ตรวจการ์ด [`scripts/verify_sd_card.py`](file:///e:/Doc/Code/randombullshit\PLADAZV2\scripts\verify_sd_card.py), เพิ่มชุดทดสอบ E2E, Frontend JS และ Browser Authentication รวม **105 รายการ (รันออฟไลน์ผ่าน 104/104 รายการ, ข้ามชุดทดสอบเน็ตจริง 1 รายการที่รอ URL; 2026-10-24)**, และจัดทำ `USER_GUIDE.md`, `KNOWN_LIMITATIONS.md`, `TEST_REPORT.md`, `RELEASE_READINESS_REPORT.md` |
 
 ---
 
@@ -89,16 +89,22 @@
    - สร้างไฟล์ `.gitignore` เพื่อป้องกันการ commit binaries ขนาดใหญ่ (`*.exe`, `dist/`, `build/`) เข้า Git โดยอาศัย GitHub Releases ในการแจกจ่าย
    - บิลด์ `dist\PLADAZ\PLADAZ.exe` ล่าสุดด้วย PyInstaller (จาก commit `ba20fd7`, 2026-10-24, smoke test exit code `0`): ขนาด `5,900,807` ไบต์, SHA-256: `8FA05A7DF0FB8A825863B5A74D95543D12BD37E9606053F70EB66E80CC9F5323` (รายละเอียดและแฮชของ `yt-dlp.exe` / `ffmpeg.exe` ใน `TEST_REPORT.md` หัวข้อ 5.4)
 
+9. **งานหลังรายงานตรวจสอบขั้นสุดท้าย (2026-10-24):**
+   - แก้ข้อค้นพบจากรายงานตรวจสอบโค้ดตามการตัดสินใจของเจ้าของโครงการ (DEC-051): ปิดแอปแบบรอ Worker, คัดลอกผ่าน `.pladaz-tmp` ทุกครั้ง, hook `pre-commit` สำหรับ regression (TC-021) — commit `ba20fd7`
+   - Browser Authentication แบบ Option C (DEC-052) — commit `25aafb6` และตรวจทานเทียบข้อกำหนดแล้วแก้จุดที่ขาด (ขอความยินยอมก่อน TEST AGAIN, ข้อความยินยอมที่ตรงความจริง, การแยกประเภทข้อผิดพลาด) — commit `51615c7`
+   - แก้ข้อค้นพบจากรายงานตรวจ UX/UI ตามการตัดสินใจของเจ้าของโครงการ (DEC-053): สี `#CC2982`, ปรับรูปลักษณ์ตาม Design Direction, Conflict Prompt, Settings บันทึกอัตโนมัติ, วางหลายลิงก์, การเข้าถึง — commit `65b866e`
+   - หมายเหตุ: `dist\PLADAZ\` ยังเป็น build จาก commit `ba20fd7` ยังไม่มีงานสามรายการข้างต้น ต้อง build ใหม่และอัปเดต SHA-256 ก่อนทดสอบบนเครื่องจริง
+
 ---
 
 ## 6. หลักฐานการทดสอบอัตโนมัติ (`pytest`) และสถานะ Test Cases ทั้งหมด
 
 ### 6.1 สรุปผลการรัน `pytest` ล่าสุด (Phase 2 + Phase 3 + Phase 4 + Phase 5)
 - **คำสั่งรันชุดทดสอบออฟไลน์ทั้งหมด:** `.\venv\Scripts\python.exe -m pytest -v -m "not network"`
-- **จำนวนการทดสอบทั้งหมดที่รวบรวมได้:** **59 รายการ** (ใน 14 ไฟล์ทดสอบ)
-- **ผลลัพธ์:** **`58 passed, 1 deselected in 5.86s`** (`0 failed`)
-  - **Unit Tests (`-m "unit"`):** **36 passed**
-  - **Integration Tests (`-m "integration and not e2e"`):** **21 passed**
+- **จำนวนการทดสอบทั้งหมดที่รวบรวมได้:** **105 รายการ** (ใน 19 ไฟล์ทดสอบ, 2026-10-24)
+- **ผลลัพธ์:** **`104 passed, 1 deselected in 11.89s`** (`0 failed`, pre-commit hook ของ commit `51615c7`)
+  - **Unit Tests (`-m "unit"`):** **66 passed**
+  - **Integration Tests (`-m "integration and not e2e"`):** **37 passed**
   - **End-to-End Tests (`-m "e2e"`):** **1 passed** (ออฟไลน์), **1 skipped/deselected** (ออนไลน์ รอ `PLADAZ_TEST_URLS`)
 
 | ไฟล์ทดสอบ | จำนวน Test Functions | ผลลัพธ์ | ขอบเขตที่ทดสอบ |
@@ -115,8 +121,13 @@
 | [`tests/integration/test_core_pipeline.py`](file:///e:/Doc/Code/randombullshit/PLADAZV2/tests/integration/test_core_pipeline.py) | 2 | **2 Passed** | `TC-021` (บูรณาการแกนระบบ) และการตรวจ AST ยืนยันว่า `domain/` ไม่ import ไลบรารีต้องห้าม |
 | [`tests/integration/test_audio_pipeline.py`](file:///e:/Doc/Code/randombullshit/PLADAZV2/tests/integration/test_audio_pipeline.py) | 3 | **3 Passed** | `TC-024(a)` (`REMUX_AAC` ด้วย `ffmpeg.exe` จริง), `TC-024(b)` (`ENCODE_AAC_LC` ด้วย `ffmpeg.exe` จริง), และ `HttpExternalMetadataFetcher` |
 | [`tests/integration/test_queue_worker.py`](file:///e:/Doc/Code/randombullshit/PLADAZV2/tests/integration/test_queue_worker.py) | 4 | **4 Passed** | `TC-018` (Sequential Queue transitions), `TC-016` (Cancel กลางทาง + ลบ Temp + Retry), `TC-019` (การ์ดหลุดกลางการดาวน์โหลด), และการผสาน `OutputValidator` + `BridgeAPI` |
-| [`tests/test_phase4_bridge_and_shell.py`](file:///e:/Doc/Code/randombullshit/PLADAZV2/tests/test_phase4_bridge_and_shell.py) | 6 | **6 Passed** | `resolve_app_paths`, `create_app_context`, เมธอด `BridgeAPI` (รวม `select_detected_drive`, `clear_cookies_file`, `pending_conflict`), การยกเลิกงานและหยุดคิว (`DEC-049`), สัญญา Event Payload ครบทั้ง 6 Event, และการตรวจออฟไลน์ UI Bundle |
+| [`tests/test_phase4_bridge_and_shell.py`](file:///e:/Doc/Code/randombullshit/PLADAZV2/tests/test_phase4_bridge_and_shell.py) | 7 | **7 Passed** | `resolve_app_paths`, `create_app_context`, เมธอด `BridgeAPI` (รวม `select_detected_drive`, `clear_cookies_file`, `pending_conflict`), การยกเลิกงานและหยุดคิว (`DEC-049`), สัญญา Event Payload ครบทั้ง 6 Event, และการตรวจออฟไลน์ UI Bundle |
 | [`tests/e2e/test_bridge_e2e.py`](file:///e:/Doc/Code/randombullshit/PLADAZV2/tests/e2e/test_bridge_e2e.py) | 2 | **1 Passed, 1 Skipped** | `test_bridge_e2e_full_queue_workflow_and_atom_verification` (ผ่านครบตั้งแต่วางลิงก์จนตรวจ MP4 Atoms บนปลายทาง) และ `test_bridge_e2e_live_network_download` (ข้ามเมื่อไม่กำหนด `PLADAZ_TEST_URLS`) |
+| [`tests/integration/test_audit_fixes.py`](file:///e:/Doc/Code/randombullshit/PLADAZV2/tests/integration/test_audit_fixes.py) | 13 | **13 Passed** | Regression ของรายงานตรวจสอบขั้นสุดท้าย (DEC-051): ปิดแอป, คัดลอกผ่าน `.pladaz-tmp`, Cancel ขณะ yt-dlp เงียบ, history พร้อมกัน, รหัสข้อผิดพลาด, `update_config` |
+| [`tests/integration/test_ux_fixes.py`](file:///e:/Doc/Code/randombullshit/PLADAZV2/tests/integration/test_ux_fixes.py) | 2 | **2 Passed** | `enqueue_urls` หลายบรรทัดและ `failed_lines` (DEC-053) |
+| [`tests/test_ux_static.py`](file:///e:/Doc/Code/randombullshit/PLADAZV2/tests/test_ux_static.py) | 10 | **10 Passed** | Contrast ของสี `#CC2982`, live region, label, ปุ่มไอคอน, หน้าต่างพิกเซล, ช่องลิงก์หลายบรรทัด (DEC-053) |
+| [`tests/unit/test_browser_auth.py`](file:///e:/Doc/Code/randombullshit/PLADAZV2/tests/unit/test_browser_auth.py) | 13 | **13 Passed** | ตรวจจับ/แนะนำเบราว์เซอร์และแปลผล yt-dlp (DEC-052) |
+| [`tests/unit/test_browser_auth_fixes.py`](file:///e:/Doc/Code/randombullshit/PLADAZV2/tests/unit/test_browser_auth_fixes.py) | 7 | **7 Passed** | การแยกประเภทข้อผิดพลาดคุกกี้, ข้อความยินยอม, `real_binaries` กับโปรไฟล์ Firefox จำลอง (DEC-052) |
 
 ### 6.2 ตารางสถานะ Test Cases (`TC-001` ถึง `TC-033`) — ใช้เฉพาะ 4 สถานะมาตรฐาน (`Pass`, `Fail`, `Blocked`, `Not Run`)
 

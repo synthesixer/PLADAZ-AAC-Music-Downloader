@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased] - work after 1.0.0 (not yet built into `dist/`)
+
+### Added
+- **Browser Authentication (DEC-052):** detect supported browsers (Firefox, Microsoft Edge, Google Chrome, Brave, Opera, Vivaldi, Chromium, Naver Whale) from the Windows registry and cookie-store presence, recommend one, and use `yt-dlp --cookies-from-browser` only after an explicit consent dialog. `cookies.txt` import stays as a fallback and takes priority when both are set.
+- **Multi-link add (DEC-053):** the link box accepts one link per line; `enqueue_urls` processes every line and returns `failed_lines`, and only failed lines stay in the box.
+- Clear History confirmation dialog; reasons shown under a disabled Start/Resume button.
+- Regression hooks: git `pre-commit` and `pre-push` run `scripts/run_tests.ps1` (network tests excluded).
+
+### Changed
+- **UX/UI (DEC-053):** action pink `#CC2982` (white text 5.0:1); lavender page bezels with Now Processing as the only pink bezel; pixel-window style for system dialogs; Conflict dialog with Keep Both as the primary action; Settings save automatically.
+- **App exit (DEC-051):** queued tasks are discarded without history, the active task is cancelled, and the worker is joined before exit.
+- Every copy to the SD card is staged as `.pladaz-tmp`, verified, then moved into place (previously only Overwrite).
+- `update_config` accepts only `require_album_art`, `musicbrainz_user_agent` and `destination_path`; the MusicBrainz User-Agent is read on every call.
+
+### Fixed
+- Cancel and timeout now work while yt-dlp prints nothing; fallback encode prefers audio-only streams; concurrent history writes no longer lose entries; `verify_sd_card.py` reads `history.json` correctly.
+- Unrelated download failures are no longer reported as browser-cookie errors.
+- Accessibility: live-region announcements, progress bar semantics, names on icon buttons, Settings labels, dialog focus handling.
+
 ## [1.0.0] - 2026-10-23
 
 ### Added

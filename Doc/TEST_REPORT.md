@@ -127,7 +127,7 @@
   ```powershell
   .\venv\Scripts\python.exe -m pytest -v -m "not network"
   ```
-- **ผลลัพธ์:** `71 passed, 1 deselected in 6.35s` (2026-10-24 หลังแก้ตามรายงานตรวจสอบ; เดิม 58 + `test_audit_fixes.py` 13)
+- **ผลลัพธ์:** `104 passed, 1 deselected in 11.89s` (2026-10-24 ผลล่าสุดจาก pre-commit hook ของ commit `51615c7`; ลำดับ: 58 → 71 หลังรายงานตรวจสอบ → 85 Browser Authentication → 97 UX/UI → 104 ตรวจทาน Browser Authentication)
 - **สคริปต์ Regression:** `powershell -ExecutionPolicy Bypass -File .\scripts\run_tests.ps1`
 - **การทดลองฉีดบั๊กเพื่อพิสูจน์การจับ Regression:** ทดลองแก้ `SmartFolderOrganizer.resolve_folder_names` ให้ใช้ `track_artist` แทน `album_artist` ชั่วคราว แล้วรัน `run_tests.ps1` ระบบตรวจจับความผิดพลาดได้ทันทีที่ `test_tc003_folder_uses_album_artist_not_track_artist` และคืน Exit Code `1` ก่อน Revert โค้ดกลับสู่สถานะปกติและรันผ่านครบ
 

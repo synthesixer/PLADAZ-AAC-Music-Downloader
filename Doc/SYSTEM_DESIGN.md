@@ -4,7 +4,7 @@
 >
 > **ภาษา:** ไทย  
 > **ชื่อโครงการ:** PLADAZ  
-> **เวอร์ชันเอกสาร:** 2.5 (อ้างอิง `IMPLEMENT_PLAN.md` เวอร์ชัน 2.9)  
+> **เวอร์ชันเอกสาร:** 2.6 (อ้างอิง `IMPLEMENT_PLAN.md` เวอร์ชัน 3.0)  
 > **แพลตฟอร์มเป้าหมาย:** Windows 10 / 11  
 > **อุปกรณ์เป้าหมาย:** SNOWSKY ECHO DAP (Native `.m4a`)  
 > **ขอบเขต:** สถาปัตยกรรม, Interface ระหว่างโมดูล, Data Models, Data Flow & Event, Error Handling & Logging, Traceability Matrix ส่วน UI Design แยกอ้างอิงตาม `DEC-028`
@@ -545,7 +545,7 @@ classDiagram
 | SD | `scan_storage_devices()` | – | `{ success, devices: [SDCardDTO], sd_status }` | IR-019 |
 | | `browse_destination_folder()` | – | `{ success, selected_path, sd_status, config }` (รับโฟลเดอร์ใดก็ได้ที่เขียนได้ — DEC-051) | IR-009, TC-008 |
 | | `select_detected_drive(drive_root)` | `str` (ต้องอยู่ในผล `list_removable_drives()` ของ Backend) | `{ success, selected_path, sd_status, config }` | IR-009, DEC-051 (บอร์ด 03) |
-| Queue | `enqueue_urls(url_text)` | `str` | `{ success, tasks_added: [TaskDTO], error }` | IR-017, DEC-025 |
+| Queue | `enqueue_urls(url_text)` | `str` (ลิงก์ละบรรทัด) | `{ success, tasks_added: [TaskDTO], failed_lines: [{ url, error: StructuredErrorDTO }], error }` — ทำทุกบรรทัดแม้บางบรรทัดผิด; `success` เป็น `false` เมื่อมีบรรทัดที่ล้มเหลว และ `error` คือข้อผิดพลาดของบรรทัดแรกที่ล้มเหลว | IR-017, DEC-025, DEC-053 |
 | | `resolve_conflict(task_id, action, scope)` | `str,str,str` | `{ success }` (ไม่มี prompt ค้าง → `ERR_CONFLICT_NOT_FOUND`) | DEC-019, 036, 051 |
 | | `retry_task(task_id)` | `str` | `{ success, task: TaskDTO }` (ไม่พบ/ไม่ใช่ Failed → `ERR_TASK_RETRY_FAILED`) | IR-017, DEC-051 |
 | | `remove_task(task_id)` | `str` | `{ success }` (กำลังดาวน์โหลด/ไม่พบ → `ERR_TASK_REMOVE_FAILED`) | IR-017, DEC-051 |

@@ -98,7 +98,7 @@ dist/PLADAZ/
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\run_tests.ps1
 ```
-*(Runs unit, integration, and offline E2E suites with 85 passed tests (the live-network test is excluded), exiting with non-zero on failure).*
+*(Runs unit, integration, and offline E2E suites with 104 passed tests (the live-network test is excluded), exiting with non-zero on failure).*
 
 ### Run It Automatically on Every Commit
 ```powershell
