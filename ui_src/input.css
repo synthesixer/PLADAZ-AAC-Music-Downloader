@@ -13,7 +13,8 @@
     --pinkbz: #F7B3D8;
     --pinkbz-sh: #EE8DC2;
     --pink-soft: #F9C6E4;
-    --accent: #D6338C;
+    /* Action pink: white text 5.0:1 (WCAG AA). Design token #D6338C measured 4.46:1 (UX-01, owner decision 2026-10-24) */
+    --accent: #CC2982;
     --hot: #F25AAE;
     --sky: #9FD4F7;
     --mint: #BFF0D4;
@@ -151,7 +152,7 @@ pre,
 }
 
 .btn-p {
-    background: var(--hot);
+    background: var(--accent);
     color: #FFFFFF;
 }
 
@@ -197,7 +198,7 @@ pre,
 }
 
 .pbtn.hot {
-    background: var(--hot);
+    background: var(--accent);
     color: #FFFFFF;
 }
 
@@ -316,6 +317,48 @@ pre,
 }
 
 
+/* Pixel window: the "system voice" for dialogs that must be read (Design Direction §6 principle 2, §14).
+   Square corners, 3px ink border, hard offset shadow, and a title strip with decorative window squares.
+   Default strip is ink (warning); add .pxwin-info for the lavender strip used by informational dialogs. */
+
+.pxwin {
+    border-radius: 0 !important;
+    border: 3px solid var(--ink) !important;
+    background: var(--bezel) !important;
+    box-shadow: 8px 8px 0 var(--ink) !important;
+    padding: 0 !important;
+    overflow: hidden;
+}
+
+.pxwin::before {
+    content: "";
+    display: block;
+    height: 22px;
+    border-bottom: 3px solid var(--ink);
+    background-color: var(--ink);
+    background-image: linear-gradient(var(--paper), var(--paper)), linear-gradient(var(--paper), var(--paper)), linear-gradient(var(--paper), var(--paper));
+    background-size: 8px 8px;
+    background-repeat: no-repeat;
+    background-position: right 12px center, right 26px center, right 40px center;
+}
+
+.pxwin.pxwin-info::before {
+    background-color: var(--header);
+}
+
+.pxwin > div {
+    margin: 12px 14px;
+}
+
+.pxwin > div + div {
+    margin-top: 0;
+}
+
+.pxwin > .rounded-2xl {
+    border-radius: 0 !important;
+}
+
+
 /* Modal overlay backdrop */
 
 .modal-backdrop {
@@ -325,10 +368,17 @@ pre,
     background: rgba(43, 37, 64, 0.58);
     backdrop-filter: blur(2px);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     padding: 20px;
     overflow-y: auto;
+}
+
+/* Center with auto margins instead of align-items:center so a dialog taller than a short window
+   can still be scrolled to its top (title strip and first controls stay reachable). */
+.modal-backdrop > * {
+    margin-top: auto;
+    margin-bottom: auto;
 }
 
 

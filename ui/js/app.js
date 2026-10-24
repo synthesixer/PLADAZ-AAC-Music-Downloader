@@ -94,6 +94,51 @@
     return task ? task.entry_url : "Track";
   }
 
+  // Screen-reader announcement through the polite live region (UX-02, WCAG 4.1.3)
+  function announce(message) {
+    const region = document.getElementById("sr-status");
+    if (!region || !message) return;
+    region.textContent = "";
+    region.textContent = String(message);
+  }
+
+  // Dialog focus: move focus into a dialog when it opens and give it back to the opener when it closes (UX-09)
+  const MODAL_INITIAL_FOCUS = {
+    "modal-conflict": "conflict-scope-single",
+    "modal-cancel-confirm": "cancel-confirm-no-btn",
+    "modal-clear-history": "clear-history-no-btn",
+    "modal-disclaimer": "disclaimer-accept-checkbox",
+    "modal-ytdlp-setup": "setup-download-btn",
+    "modal-updater": "updater-run-btn",
+    "modal-error-log": "error-log-done-btn",
+    "modal-about": "about-back-btn",
+    "modal-queue-summary": "summary-done-btn",
+    "modal-task-stages": "task-stages-close-btn",
+    "modal-browser-consent": "browser-consent-cancel-btn",
+  };
+  const modalReturnFocus = {};
+
+  function openModal(id, focusId) {
+    const modal = document.getElementById(id);
+    if (!modal) return;
+    const wasHidden = modal.classList.contains("hidden");
+    modal.classList.remove("hidden");
+    if (!wasHidden) return;
+    modalReturnFocus[id] = document.activeElement || null;
+    const target = document.getElementById(focusId || MODAL_INITIAL_FOCUS[id]);
+    if (target && typeof target.focus === "function") target.focus();
+  }
+
+  function closeModal(id) {
+    const modal = document.getElementById(id);
+    if (!modal) return;
+    const wasOpen = !modal.classList.contains("hidden");
+    modal.classList.add("hidden");
+    const back = modalReturnFocus[id];
+    delete modalReturnFocus[id];
+    if (wasOpen && back && typeof back.focus === "function") back.focus();
+  }
+
   function reportCommandError(res, fallbackMessage) {
     if (res && (res.success || res.cancelled)) return false;
     const err = (res && res.error) || {
@@ -188,6 +233,7 @@
       const target = btn.getAttribute("data-nav");
       const active = target === viewName || (viewName === "track" && target === "queue");
       btn.classList.toggle("hot", active);
+      btn.setAttribute("aria-current", active ? "page" : "false");
     });
 
     if (viewName === "history") {
@@ -212,14 +258,14 @@
     if (state.sdAlert) {
       htmlParts.push(`
         <div class="rounded-2xl border-[2.5px] border-[var(--ink)] bg-[var(--err)] text-[var(--err-ink)] px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 shadow-[0_3px_0_#2B2540]">
-          <div class="flex items-center gap-2.5 min-w-0">
+          <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1 min-w-0">
             <span class="sil text-xs px-2 py-0.5 rounded bg-[var(--ink)] text-white font-bold shrink-0">! SD CARD ALERT</span>
             <span class="mono text-xs font-bold shrink-0">${escapeHtml(state.sdAlert.code)}</span>
-            <span class="text-xs font-medium truncate">${escapeHtml(state.sdAlert.message_en)}</span>
+            <span class="text-xs font-medium break-words min-w-0 selectable">${escapeHtml(state.sdAlert.message_en)}</span>
           </div>
           <div class="flex items-center gap-2">
             <button type="button" data-action="alert-resume-queue" class="pbtn hot text-xs">↻ RESUME QUEUE</button>
-            <button type="button" data-action="dismiss-sd-alert" class="ibtn">×</button>
+            <button type="button" data-action="dismiss-sd-alert" class="ibtn" aria-label="Dismiss SD card alert">×</button>
           </div>
         </div>
       `);
@@ -228,20 +274,26 @@
     if (state.systemAlert) {
       htmlParts.push(`
         <div class="rounded-2xl border-[2.5px] border-[var(--ink)] bg-[var(--warn)] text-[var(--warn-ink)] px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 shadow-[0_3px_0_#2B2540]">
-          <div class="flex items-center gap-2.5 min-w-0">
+          <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1 min-w-0">
             <span class="sil text-xs px-2 py-0.5 rounded bg-[var(--ink)] text-white font-bold shrink-0">SYSTEM NOTICE</span>
             <span class="mono text-xs font-bold shrink-0">${escapeHtml(state.systemAlert.code)}</span>
-            <span class="text-xs font-medium truncate">${escapeHtml(state.systemAlert.message_en)}</span>
+            <span class="text-xs font-medium break-words min-w-0 selectable">${escapeHtml(state.systemAlert.message_en)}</span>
           </div>
           <div class="flex items-center gap-2">
             <button type="button" data-action="open-error-log" class="pbtn text-xs">VIEW DETAILS</button>
-            <button type="button" data-action="dismiss-sys-alert" class="ibtn">×</button>
+            <button type="button" data-action="dismiss-sys-alert" class="ibtn" aria-label="Dismiss system notice">×</button>
           </div>
         </div>
       `);
     }
 
     container.innerHTML = htmlParts.join("");
+    const alertKey = [state.sdAlert && state.sdAlert.code, state.systemAlert && state.systemAlert.code].join("|");
+    if (alertKey !== state.lastAnnouncedAlert) {
+      state.lastAnnouncedAlert = alertKey;
+      if (state.sdAlert) announce(`SD card alert: ${state.sdAlert.message_en}`);
+      else if (state.systemAlert) announce(`System notice: ${state.systemAlert.message_en}`);
+    }
   }
 
   // =========================================================================
@@ -304,6 +356,7 @@
 
     const segContainer = rowEl.querySelector("[data-task-progress-segments]");
     if (segContainer) {
+      segContainer.setAttribute("aria-valuenow", String(pct));
       const segNodes = segContainer.querySelectorAll("[data-seg-idx]");
       const totalSegments = segNodes.length || 10;
       const clamped = Math.max(0, Math.min(100, pct));
@@ -363,6 +416,17 @@
       cancelBtn.disabled = !hasDownloading;
     }
 
+    const runHint = document.getElementById("queue-run-hint");
+    if (runHint) {
+      let hint = "READY · PRESS START QUEUE";
+      if (hasDownloading) hint = "SEQUENTIAL WORKER · 1 TRACK AT A TIME";
+      else if (state.ytdlpUpdating) hint = "START WAITS · YT-DLP IS UPDATING";
+      else if (!hasQueued) hint = "NOTHING TO START · ADD A LINK ABOVE";
+      else if (!sdReady) hint = "START NEEDS A WRITABLE MICRO SD FOLDER";
+      else if (state.queueHalted) hint = "QUEUE STOPPED · PRESS RESUME QUEUE";
+      runHint.textContent = hint;
+    }
+
     const listEl = document.getElementById("queue-list-container");
     if (!listEl) return;
 
@@ -390,7 +454,7 @@
         if (t.status === "Queued") {
           statusBadge = `<span class="sil text-xs px-2 py-0.5 rounded border border-[var(--ink)] bg-[var(--chip)] text-[var(--violet)] font-bold">Queued</span>`;
         } else if (t.status === "Downloading") {
-          statusBadge = `<span class="sil text-xs px-2 py-0.5 rounded border border-[var(--ink)] bg-[var(--hot)] text-white font-bold">Downloading</span>`;
+          statusBadge = `<span class="sil text-xs px-2 py-0.5 rounded border border-[var(--ink)] bg-[var(--accent)] text-white font-bold">Downloading</span>`;
         } else if (t.status === "Completed") {
           statusBadge = `<span class="sil text-xs px-2 py-0.5 rounded border border-[var(--ink)] bg-[var(--mint)] text-[var(--mint-ink)] font-bold">✓ Completed</span>`;
         } else if (t.status === "Failed") {
@@ -412,7 +476,7 @@
                 <span data-task-stage-text>${escapeHtml(stText)}</span>
                 <span data-task-pct-text class="font-bold">${pct}%</span>
               </div>
-              <div data-task-progress-segments class="grid grid-cols-10 gap-1 p-0.5 rounded border border-[var(--ink)] bg-[var(--paper)]">
+              <div data-task-progress-segments role="progressbar" aria-label="Progress for ${escapeHtml(title)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" class="grid grid-cols-10 gap-1 p-0.5 rounded border border-[var(--ink)] bg-[var(--paper)]">
                 ${renderSegmentsHtml(pct, 10, "h-2")}
               </div>
             </div>
@@ -444,9 +508,9 @@
               <div class="flex items-center gap-1.5 shrink-0">
                 ${noCoverBadge}
                 ${statusBadge}
-                <button type="button" class="ibtn" title="10-Stage Pipeline Detail" data-action="open-stages" data-task-id="${escapeHtml(t.task_id)}">▾</button>
-                <button type="button" class="ibtn" title="Track Metadata & Validator Details" data-action="open-track" data-task-id="${escapeHtml(t.task_id)}">→</button>
-                <button type="button" class="ibtn" title="${t.status === "Downloading" ? "Cancel Download" : "Remove from Queue"}" data-action="remove-or-cancel" data-task-id="${escapeHtml(t.task_id)}">×</button>
+                <button type="button" class="ibtn" title="10-Stage Pipeline Detail" aria-label="Show 10 stages for ${escapeHtml(title)}" data-action="open-stages" data-task-id="${escapeHtml(t.task_id)}">▾</button>
+                <button type="button" class="ibtn" title="Track Metadata & Validator Details" aria-label="Track details for ${escapeHtml(title)}" data-action="open-track" data-task-id="${escapeHtml(t.task_id)}">→</button>
+                <button type="button" class="ibtn" title="${t.status === "Downloading" ? "Cancel Download" : "Remove from Queue"}" aria-label="${t.status === "Downloading" ? `Cancel download of ${escapeHtml(title)}` : `Remove ${escapeHtml(title)} from queue`}" data-action="remove-or-cancel" data-task-id="${escapeHtml(t.task_id)}">×</button>
               </div>
             </div>
             ${stageOrErrorRow}
@@ -503,11 +567,14 @@
       stageCounter.textContent = "IDLE · 00/10";
       statusBadge.textContent = "STANDBY";
       titleEl.textContent = "Waiting for queue start…";
-      artistEl.textContent = "Paste a link and press Start Queue";
+      artistEl.textContent = "Add a link, then press Start Queue";
       albumEl.textContent = "—";
       stageLabel.textContent = "STAGE: IDLE";
       pctEl.textContent = "0%";
-      if (segsEl) segsEl.innerHTML = renderSegmentsHtml(0, 10, "h-2.5");
+      if (segsEl) {
+        segsEl.innerHTML = renderSegmentsHtml(0, 10, "h-2.5");
+        segsEl.setAttribute("aria-valuenow", "0");
+      }
       speedEtaEl.textContent = "Speed: — · ETA: —";
       openStagesBtn.classList.add("hidden");
       coverImg.classList.add("hidden");
@@ -525,7 +592,10 @@
       stageLabel.textContent = stObj ? `STAGE ${stObj.num}: ${stObj.key}` : `STATUS: ${activeTask.status}`;
       const pct = Math.round(Number(activeTask.progress_percent || (activeTask.status === "Completed" ? 100 : 0)));
       pctEl.textContent = `${pct}%`;
-      if (segsEl) segsEl.innerHTML = renderSegmentsHtml(pct, 10, "h-2.5");
+      if (segsEl) {
+        segsEl.innerHTML = renderSegmentsHtml(pct, 10, "h-2.5");
+        segsEl.setAttribute("aria-valuenow", String(pct));
+      }
       speedEtaEl.textContent = activeTask._speedEta || "Speed: — · ETA: —";
 
       openStagesBtn.classList.remove("hidden");
@@ -570,7 +640,7 @@
         } else if (activeIdx > idx) {
           cls = "bg-[var(--mint)] text-[var(--mint-ink)] font-bold";
         } else if (activeIdx === idx) {
-          cls = "bg-[var(--hot)] text-white font-bold ring-2 ring-[var(--ink)]";
+          cls = "bg-[var(--accent)] text-white font-bold ring-2 ring-[var(--ink)]";
         }
         return `
           <div class="rounded-lg border border-[var(--ink)] px-1.5 py-1 text-center ${cls}" title="${escapeHtml(st.title)}">
@@ -652,7 +722,7 @@
       : task.status === "Completed"
       ? "bg-[var(--mint)] text-[var(--mint-ink)]"
       : task.status === "Downloading"
-      ? "bg-[var(--hot)] text-white"
+      ? "bg-[var(--accent)] text-white"
       : "bg-[var(--paper)] text-[var(--ink)]";
     const statusLabel = task.status === "Failed" ? "✕ Failed" : task.status === "Completed" ? "✓ Completed" : task.status;
     badgesEl.innerHTML = `
@@ -923,7 +993,7 @@
 
     const modal = document.getElementById("modal-browser-consent");
     if (modal) {
-      modal.classList.remove("hidden");
+      openModal(modal.id);
       const cancelBtn = document.getElementById("browser-consent-cancel-btn");
       if (cancelBtn) cancelBtn.focus();
     }
@@ -932,7 +1002,7 @@
   function closeBrowserConsentModal() {
     state.pendingConsentBrowser = null;
     const modal = document.getElementById("modal-browser-consent");
-    if (modal) modal.classList.add("hidden");
+    if (modal) closeModal(modal.id);
   }
 
   function populateSettingsForm() {
@@ -1052,14 +1122,14 @@
     cb.checked = Boolean(state.config.disclaimer_accepted);
     acceptBtn.disabled = !cb.checked;
 
-    modal.classList.remove("hidden");
+    openModal(modal.id);
   }
 
   function openYtdlpSetupModal() {
     const modal = document.getElementById("modal-ytdlp-setup");
     document.getElementById("setup-expected-path").textContent =
       (state.ytdlpStatus && state.ytdlpStatus.expected_path) || "[app folder]\\yt-dlp.exe";
-    modal.classList.remove("hidden");
+    openModal(modal.id);
   }
 
   function openConflictModal(payload) {
@@ -1075,7 +1145,7 @@
     radios.forEach((r) => {
       r.checked = r.value === "single";
     });
-    modal.classList.remove("hidden");
+    openModal(modal.id);
   }
 
   function setUpdaterCloseLocked(locked) {
@@ -1116,7 +1186,7 @@
     state.pendingCancelTaskId = taskId;
     document.getElementById("cancel-confirm-track-name").textContent = getTaskDisplayTitle(task);
     const modal = document.getElementById("modal-cancel-confirm");
-    modal.classList.remove("hidden");
+    openModal(modal.id);
     const noBtn = document.getElementById("cancel-confirm-no-btn");
     if (noBtn) noBtn.focus();
   }
@@ -1124,7 +1194,7 @@
   function openStageModal(taskId) {
     state.stageModalTaskId = taskId;
     renderStageModal();
-    document.getElementById("modal-task-stages").classList.remove("hidden");
+    openModal("modal-task-stages");
   }
 
   function renderStageModal() {
@@ -1147,7 +1217,7 @@
           badge = `<span class="sil text-xs px-2 py-0.5 rounded bg-[var(--warn)] text-[var(--warn-ink)] border border-[var(--ink)] font-bold">ACTION NEEDED</span>`;
           extraBtn = `<button type="button" data-action="reopen-conflict" class="pbtn hot text-xs py-0.5 px-2">OPEN PROMPT</button>`;
         } else {
-          badge = `<span class="sil text-xs px-2 py-0.5 rounded bg-[var(--hot)] text-white border border-[var(--ink)] font-bold">RUNNING</span>`;
+          badge = `<span class="sil text-xs px-2 py-0.5 rounded bg-[var(--accent)] text-white border border-[var(--ink)] font-bold">RUNNING</span>`;
         }
       }
       return `
@@ -1198,7 +1268,7 @@
       `)
       .join("");
 
-    document.getElementById("modal-queue-summary").classList.remove("hidden");
+    openModal("modal-queue-summary");
   }
 
   async function openErrorLogModal(errObj) {
@@ -1209,7 +1279,7 @@
     codeBadge.textContent = (errObj && errObj.code) || "PLADAZ.LOG";
     msgEl.textContent = (errObj && errObj.message_en) || "Recent diagnostic entries from logs/pladaz.log (cookies and tokens automatically redacted).";
     termEl.innerHTML = `<div class="text-[#9FD4F7]">Loading logs/pladaz.log…</div>`;
-    document.getElementById("modal-error-log").classList.remove("hidden");
+    openModal("modal-error-log");
 
     const res = await window.PladazBridge.getRecentLogs(80);
     if (res && res.success && res.lines && res.lines.length > 0) {
@@ -1233,7 +1303,7 @@
       (state.ytdlpStatus && state.ytdlpStatus.version) || "missing";
     document.getElementById("about-ffmpeg-ver").textContent =
       (state.systemInfo && state.systemInfo.ffmpeg_version) || "bundled";
-    document.getElementById("modal-about").classList.remove("hidden");
+    openModal("modal-about");
   }
 
   // =========================================================================
@@ -1259,10 +1329,28 @@
     const addUrlLabel = document.getElementById("add-url-label");
     const feedbackArea = document.getElementById("fetching-feedback-area");
 
-    enqueueForm.addEventListener("submit", async (e) => {
+    const growLinkBox = () => {
+      if (!urlInput.style) return;
+      urlInput.style.height = "auto";
+      if (urlInput.scrollHeight) urlInput.style.height = `${urlInput.scrollHeight + 4}px`;
+      // Scroll only once the box reaches its max height (160px)
+      urlInput.style.overflowY = urlInput.scrollHeight > 160 ? "auto" : "hidden";
+    };
+    urlInput.addEventListener("input", growLinkBox);
+    urlInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
+        e.preventDefault();
+        submitLinks();
+      }
+    });
+    enqueueForm.addEventListener("submit", (e) => {
       e.preventDefault();
+      submitLinks();
+    });
+
+    async function submitLinks() {
       const rawUrl = (urlInput.value || "").trim();
-      if (!rawUrl) return;
+      if (!rawUrl || urlInput.disabled) return;
 
       urlInput.disabled = true;
       addUrlBtn.disabled = true;
@@ -1280,34 +1368,57 @@
       addUrlBtn.disabled = false;
       addUrlLabel.textContent = "ADD TO QUEUE";
 
-      if (res && res.success) {
-        urlInput.value = "";
-        const addedList = res.tasks_added || [];
-        if (state.hadActiveRun) {
-          addedList.forEach((t) => {
-            if (t && t.task_id) state.activeRunTaskIds.add(t.task_id);
-          });
-        }
-        const count = addedList.length;
-        feedbackArea.innerHTML = `
-          <div class="rounded-xl border-2 border-[var(--ink)] bg-[var(--mint)] text-[var(--mint-ink)] px-3 py-2 flex items-center justify-between text-xs font-bold">
-            <span>✓ ADDED ${count} TRACK${count === 1 ? "" : "S"} TO QUEUE</span>
-            <button type="button" data-action="dismiss-fetch-feedback" class="ibtn">×</button>
-          </div>
-        `;
-      } else {
-        const err = (res && res.error) || { code: "ERR_SOURCE_INVALID_URL", message_en: "Could not read link." };
-        feedbackArea.innerHTML = `
-          <div class="rounded-xl border-2 border-[var(--ink)] bg-[var(--err)] text-[var(--err-ink)] p-3 flex items-center justify-between gap-2 text-xs">
-            <div>
-              <div class="mono font-bold">${escapeHtml(err.code)}</div>
-              <div>${escapeHtml(err.message_en)}</div>
-            </div>
-            <button type="button" data-action="dismiss-fetch-feedback" class="ibtn">×</button>
-          </div>
-        `;
+      const addedList = (res && res.tasks_added) || [];
+      if (state.hadActiveRun) {
+        addedList.forEach((t) => {
+          if (t && t.task_id) state.activeRunTaskIds.add(t.task_id);
+        });
       }
-    });
+      const failedLines = (res && res.failed_lines) || [];
+      if (!(res && res.success) && failedLines.length === 0) {
+        failedLines.push({
+          url: rawUrl,
+          error: (res && res.error) || { code: "ERR_SOURCE_INVALID_URL", message_en: "Could not read link." },
+        });
+      }
+      // Keep only the lines that failed so a retry never queues the good ones twice
+      urlInput.value = failedLines.map((f) => f.url).join("\n");
+      growLinkBox();
+
+      const count = addedList.length;
+      const addedText = `ADDED ${count} TRACK${count === 1 ? "" : "S"} TO QUEUE`;
+      const parts = [];
+      if (count > 0 || failedLines.length === 0) {
+        parts.push(`
+          <div class="rounded-xl border-2 border-[var(--ink)] bg-[var(--mint)] text-[var(--mint-ink)] px-3 py-2 flex items-center justify-between text-xs font-bold">
+            <span>✓ ${addedText}</span>
+            <button type="button" data-action="dismiss-fetch-feedback" class="ibtn" aria-label="Dismiss message">×</button>
+          </div>
+        `);
+      }
+      if (failedLines.length > 0) {
+        parts.push(`
+          <div class="rounded-xl border-2 border-[var(--ink)] bg-[var(--err)] text-[var(--err-ink)] p-3 flex items-start justify-between gap-2 text-xs">
+            <div class="space-y-1.5 min-w-0 selectable">
+              <div class="font-bold">${failedLines.length === 1 ? "This link could not be added:" : `${failedLines.length} links could not be added:`}</div>
+              ${failedLines.map((f) => `
+                <div>
+                  <div class="mono break-all">${escapeHtml(f.url)}</div>
+                  <div><span class="mono font-bold">${escapeHtml(f.error && f.error.code)}</span> · ${escapeHtml(f.error && f.error.message_en)}</div>
+                </div>`).join("")}
+              <div class="text-[var(--ink)]">The failed lines stay in the box so you can fix them and press Enter again.</div>
+            </div>
+            <button type="button" data-action="dismiss-fetch-feedback" class="ibtn" aria-label="Dismiss message">×</button>
+          </div>
+        `);
+      }
+      feedbackArea.innerHTML = parts.join("");
+      announce(
+        failedLines.length === 0
+          ? `Added ${count} track${count === 1 ? "" : "s"} to the queue.`
+          : `Added ${count} track${count === 1 ? "" : "s"}. ${failedLines.length} link${failedLines.length === 1 ? "" : "s"} could not be added.`
+      );
+    }
 
     // Queue Controls (strictly rely on Backend response/events for queueRunning and queueHalted)
     document.getElementById("start-queue-btn").addEventListener("click", async () => {
@@ -1379,7 +1490,7 @@
       } else if (action === "summary-retry" && taskId) {
         const res = await window.PladazBridge.retryTask(taskId);
         if (!reportCommandError(res, "Failed to retry task.")) {
-          document.getElementById("modal-queue-summary").classList.add("hidden");
+          closeModal("modal-queue-summary");
         }
       } else if (action === "view-task-error" && taskId) {
         const t = state.queue.find((x) => x.task_id === taskId);
@@ -1481,10 +1592,42 @@
     });
 
     // Settings View controls (Board 06)
-    document.getElementById("settings-require-cover-checkbox").addEventListener("change", (e) => {
-      document.getElementById("settings-require-cover-label").textContent = e.target.checked
+    const settingsStatusEl = document.getElementById("settings-save-status");
+    const setCoverLabel = (on) => {
+      document.getElementById("settings-require-cover-label").textContent = on
         ? "ON (STRICT — FAIL IF MISSING)"
         : "OFF (WARN ONLY)";
+    };
+    // Save one setting right away; on failure show the backend error and put the control back (UX-06)
+    async function autoSaveSetting(partial, revert) {
+      settingsStatusEl.textContent = "SAVING…";
+      const res = await window.PladazBridge.updateConfig(partial);
+      if (res && res.success) {
+        state.config = res.config || Object.assign({}, state.config, partial);
+        settingsStatusEl.textContent = "✓ SAVED TO CONFIG.JSON";
+        return true;
+      }
+      const msg = (res && res.error && res.error.message_en) || "Setting was not saved.";
+      settingsStatusEl.textContent = `✕ NOT SAVED — ${msg}`;
+      reportCommandError(res, "Failed to save settings to config.json.");
+      revert();
+      return false;
+    }
+    document.getElementById("settings-require-cover-checkbox").addEventListener("change", (e) => {
+      const on = Boolean(e.target.checked);
+      setCoverLabel(on);
+      autoSaveSetting({ require_album_art: on }, () => {
+        const saved = Boolean(state.config.require_album_art);
+        e.target.checked = saved;
+        setCoverLabel(saved);
+      });
+    });
+    document.getElementById("settings-mb-ua-input").addEventListener("change", (e) => {
+      const value = String(e.target.value || "").trim();
+      if (value === (state.config.musicbrainz_user_agent || "")) return;
+      autoSaveSetting({ musicbrainz_user_agent: value }, () => {
+        e.target.value = state.config.musicbrainz_user_agent || "";
+      });
     });
     document.getElementById("settings-browse-dest-btn").addEventListener("click", async () => {
       const res = await window.PladazBridge.browseDestinationFolder();
@@ -1621,28 +1764,9 @@
       document.getElementById("updater-current-ver").textContent =
         (state.ytdlpStatus && state.ytdlpStatus.version) || "Not installed";
       document.getElementById("updater-new-ver").textContent = "—";
-      document.getElementById("modal-updater").classList.remove("hidden");
+      openModal("modal-updater");
     });
     document.getElementById("settings-open-about-btn").addEventListener("click", openAboutModal);
-    document.getElementById("settings-discard-btn").addEventListener("click", populateSettingsForm);
-    document.getElementById("settings-save-btn").addEventListener("click", async () => {
-      const partial = {
-        require_album_art: document.getElementById("settings-require-cover-checkbox").checked,
-        musicbrainz_user_agent: document.getElementById("settings-mb-ua-input").value.trim(),
-      };
-      const res = await window.PladazBridge.updateConfig(partial);
-      const statusEl = document.getElementById("settings-save-status");
-      if (res && res.success) {
-        state.config = res.config;
-        statusEl.textContent = "✓ SETTINGS SAVED TO CONFIG.JSON";
-        setTimeout(() => {
-          statusEl.textContent = "SAVED TO PORTABLE CONFIG.JSON";
-        }, 2500);
-      } else {
-        statusEl.textContent = "✕ FAILED TO SAVE SETTINGS";
-        reportCommandError(res, "Failed to save settings to config.json.");
-      }
-    });
 
     // History View controls (Board 07)
     document.querySelectorAll(".hist-filter-btn").forEach((btn) => {
@@ -1650,6 +1774,7 @@
         state.historyFilter = btn.getAttribute("data-hist-filter") || "all";
         document.querySelectorAll(".hist-filter-btn").forEach((b) => {
           b.classList.toggle("hot", b === btn);
+          b.setAttribute("aria-pressed", b === btn ? "true" : "false");
         });
         renderHistoryList();
       });
@@ -1658,14 +1783,14 @@
       const count = state.historyEntries.length;
       document.getElementById("clear-history-count").textContent =
         count === 1 ? "1 record" : `${count} records`;
-      document.getElementById("modal-clear-history").classList.remove("hidden");
+      openModal("modal-clear-history");
       document.getElementById("clear-history-no-btn").focus();
     });
     document.getElementById("clear-history-no-btn").addEventListener("click", () => {
-      document.getElementById("modal-clear-history").classList.add("hidden");
+      closeModal("modal-clear-history");
     });
     document.getElementById("clear-history-yes-btn").addEventListener("click", async () => {
-      document.getElementById("modal-clear-history").classList.add("hidden");
+      closeModal("modal-clear-history");
       const res = await window.PladazBridge.clearHistory();
       if (res && res.success) {
         state.historyEntries = [];
@@ -1690,7 +1815,7 @@
       discAcceptBtn.disabled = false;
       if (res && res.success) {
         state.config.disclaimer_accepted = true;
-        document.getElementById("modal-disclaimer").classList.add("hidden");
+        closeModal("modal-disclaimer");
         if (!state.ytdlpStatus || !state.ytdlpStatus.present) {
           openYtdlpSetupModal();
         } else if (state.pendingConflict) {
@@ -1704,7 +1829,7 @@
       window.PladazBridge.quitApp();
     });
     document.getElementById("disclaimer-close-readonly-btn").addEventListener("click", () => {
-      document.getElementById("modal-disclaimer").classList.add("hidden");
+      closeModal("modal-disclaimer");
     });
 
     // Board 09: yt-dlp Setup Modal
@@ -1734,7 +1859,7 @@
       if (res && res.success && res.present) {
         state.ytdlpStatus = res;
         populateSettingsForm();
-        document.getElementById("modal-ytdlp-setup").classList.add("hidden");
+        closeModal("modal-ytdlp-setup");
         if (state.pendingConflict) {
           openConflictModal(state.pendingConflict);
         }
@@ -1749,7 +1874,7 @@
       if (res && res.success && res.present) {
         state.ytdlpStatus = res;
         populateSettingsForm();
-        document.getElementById("modal-ytdlp-setup").classList.add("hidden");
+        closeModal("modal-ytdlp-setup");
         if (state.pendingConflict) {
           openConflictModal(state.pendingConflict);
         }
@@ -1759,7 +1884,7 @@
       }
     });
     document.getElementById("setup-open-app-btn").addEventListener("click", () => {
-      document.getElementById("modal-ytdlp-setup").classList.add("hidden");
+      closeModal("modal-ytdlp-setup");
       if (state.pendingConflict) {
         openConflictModal(state.pendingConflict);
       }
@@ -1786,7 +1911,7 @@
 
       if (res && res.success) {
         state.pendingConflict = null;
-        document.getElementById("modal-conflict").classList.add("hidden");
+        closeModal("modal-conflict");
       } else {
         reportCommandError(res, "Failed to resolve duplicate file conflict.");
       }
@@ -1798,12 +1923,12 @@
     // Board 11: Cancel Confirm Modal (Wait for Backend response instead of mutating queueHalted prematurely)
     document.getElementById("cancel-confirm-no-btn").addEventListener("click", () => {
       state.pendingCancelTaskId = null;
-      document.getElementById("modal-cancel-confirm").classList.add("hidden");
+      closeModal("modal-cancel-confirm");
     });
     document.getElementById("cancel-confirm-yes-btn").addEventListener("click", async () => {
       const taskId = state.pendingCancelTaskId;
       state.pendingCancelTaskId = null;
-      document.getElementById("modal-cancel-confirm").classList.add("hidden");
+      closeModal("modal-cancel-confirm");
       if (taskId) {
         const res = await window.PladazBridge.cancelTask(taskId);
         if (!reportCommandError(res, "Failed to cancel task.")) {
@@ -1815,12 +1940,12 @@
 
     // Board 14: Stage Modal close
     document.getElementById("task-stages-close-btn").addEventListener("click", () => {
-      document.getElementById("modal-task-stages").classList.add("hidden");
+      closeModal("modal-task-stages");
     });
 
     // Board 15: Summary Modal buttons
     document.getElementById("summary-view-history-btn").addEventListener("click", () => {
-      document.getElementById("modal-queue-summary").classList.add("hidden");
+      closeModal("modal-queue-summary");
       switchView("history");
     });
     document.getElementById("summary-open-folder-btn").addEventListener("click", async () => {
@@ -1828,7 +1953,7 @@
       reportCommandError(res, "Could not open destination folder on Micro SD Card.");
     });
     document.getElementById("summary-done-btn").addEventListener("click", () => {
-      document.getElementById("modal-queue-summary").classList.add("hidden");
+      closeModal("modal-queue-summary");
     });
 
     // Board 16: Updater Modal
@@ -1863,11 +1988,11 @@
     });
     document.getElementById("updater-close-btn").addEventListener("click", () => {
       if (state.ytdlpUpdating) return;
-      document.getElementById("modal-updater").classList.add("hidden");
+      closeModal("modal-updater");
     });
     document.getElementById("updater-done-btn").addEventListener("click", () => {
       if (state.ytdlpUpdating) return;
-      document.getElementById("modal-updater").classList.add("hidden");
+      closeModal("modal-updater");
     });
 
     // Board 17: Error Log Modal
@@ -1882,15 +2007,15 @@
       reportCommandError(res, "Could not open logs folder.");
     });
     document.getElementById("error-log-close-btn").addEventListener("click", () => {
-      document.getElementById("modal-error-log").classList.add("hidden");
+      closeModal("modal-error-log");
     });
     document.getElementById("error-log-done-btn").addEventListener("click", () => {
-      document.getElementById("modal-error-log").classList.add("hidden");
+      closeModal("modal-error-log");
     });
 
     // Board 20: About Modal
     document.getElementById("about-open-disclaimer-btn").addEventListener("click", () => {
-      document.getElementById("modal-about").classList.add("hidden");
+      closeModal("modal-about");
       openDisclaimerModal(true);
     });
     document.getElementById("about-toggle-notices-btn").addEventListener("click", () => {
@@ -1901,10 +2026,10 @@
       reportCommandError(res, "Could not open logs folder.");
     });
     document.getElementById("about-close-btn").addEventListener("click", () => {
-      document.getElementById("modal-about").classList.add("hidden");
+      closeModal("modal-about");
     });
     document.getElementById("about-back-btn").addEventListener("click", () => {
-      document.getElementById("modal-about").classList.add("hidden");
+      closeModal("modal-about");
     });
 
     document.addEventListener("keydown", trapFocusInOpenModal);
@@ -1914,11 +2039,11 @@
       if (e.key !== "Escape") return;
       if (!document.getElementById("modal-cancel-confirm").classList.contains("hidden")) {
         state.pendingCancelTaskId = null;
-        document.getElementById("modal-cancel-confirm").classList.add("hidden");
+        closeModal("modal-cancel-confirm");
         return;
       }
       if (!document.getElementById("modal-clear-history").classList.contains("hidden")) {
-        document.getElementById("modal-clear-history").classList.add("hidden");
+        closeModal("modal-clear-history");
         return;
       }
       if (!document.getElementById("modal-browser-consent").classList.contains("hidden")) {
@@ -1930,7 +2055,7 @@
       dismissible.forEach((id) => {
         const el = document.getElementById(id);
         if (el && !el.classList.contains("hidden")) {
-          el.classList.add("hidden");
+          closeModal(id);
         }
       });
     });
@@ -1980,6 +2105,12 @@
       }
       if (updated.has_cover) {
         ensureCoverLoaded(updated.task_id);
+      }
+      if (updated.status === "Completed" || updated.status === "Failed") {
+        const name = getTaskDisplayTitle(updated);
+        announce(updated.status === "Completed"
+          ? `${name}: completed.`
+          : `${name}: failed${updated.error ? `, ${updated.error.code}` : ""}.`);
       }
       renderQueueList();
       renderNowProcessing();

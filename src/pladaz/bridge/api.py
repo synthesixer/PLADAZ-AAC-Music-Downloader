@@ -537,27 +537,26 @@ class BridgeAPI:
             return self._error_response(exc)
 
     def enqueue_urls(self, url_text: str) -> dict[str, Any]:
-        try:
-            lines = [
-                line.strip()
-                for line in (url_text or "").splitlines()
-                if line.strip()
-            ]
-            if not lines:
-                lines = [url_text.strip()]
-            added_all = []
-            for url in lines:
-                added = self._queue_manager.enqueue_url(url)
-                added_all.extend(added)
-            return {
-                "success": True,
-                "tasks_added": [task_to_dto(t) for t in added_all],
-                "error": None,
-            }
-        except Exception as exc:
-            res = self._error_response(exc)
-            res["tasks_added"] = []
-            return res
+        """Add one link per line. A bad line does not stop the others: tracks from good lines are queued
+        and reported in `tasks_added`, and each bad line is listed in `failed_lines` (UX-11)."""
+        lines = [
+            line.strip()
+            for line in (url_text or "").splitlines()
+            if line.strip()
+        ] or [(url_text or "").strip()]
+        added_all = []
+        failed_lines: list[dict[str, Any]] = []
+        for url in lines:
+            try:
+                added_all.extend(self._queue_manager.enqueue_url(url))
+            except Exception as exc:
+                failed_lines.append({"url": url, "error": self._error_response(exc)["error"]})
+        return {
+            "success": not failed_lines,
+            "tasks_added": [task_to_dto(t) for t in added_all],
+            "failed_lines": failed_lines,
+            "error": failed_lines[0]["error"] if failed_lines else None,
+        }
 
     def start_queue(self) -> dict[str, Any]:
         try:

@@ -418,6 +418,15 @@ const fakeApi = {
     apiCalls.push(["cancel_task", taskId]);
     return cancelTaskResponse;
   },
+  enqueue_urls: async (text) => {
+    apiCalls.push(["enqueue_urls", text]);
+    return {
+      success: false,
+      tasks_added: [{ task_id: "task-added-1", entry_url: "https://www.youtube.com/watch?v=a", status: "Queued", stage: null, progress_percent: 0, metadata: null, has_cover: false, validation: null, warnings: [], error: null }],
+      failed_lines: [{ url: "https://example.com/x", error: { code: "ERR_SOURCE_INVALID_URL", message_en: "Unsupported domain", recoverable: true } }],
+      error: { code: "ERR_SOURCE_INVALID_URL", message_en: "Unsupported domain", recoverable: true },
+    };
+  },
   update_config: async (partial) => {
     apiCalls.push(["update_config", partial]);
     return { success: false, error: { code: "ERR_CONFIG_CORRUPT", message_en: "Disk write error", recoverable: true } };
@@ -665,15 +674,79 @@ const flushPromises = async () => {
   const clearCookiesCall = apiCalls.find((c) => c[0] === "clear_cookies_file");
   assert.ok(clearCookiesCall, "Removing cookies must call explicit clear_cookies_file()");
 
-  await documentObj.getElementById("settings-save-btn").trigger("click");
+  // UX-06: Settings auto-save on change; a failed save surfaces the error and reverts the control
+  const coverCb = documentObj.getElementById("settings-require-cover-checkbox");
+  coverCb.checked = true;
+  await coverCb.trigger("change");
+  await flushPromises();
+  const coverCall = apiCalls.find((c) => c[0] === "update_config" && c[1] && "require_album_art" in c[1]);
+  assert.ok(coverCall, "Toggling Require album art must auto-save through update_config");
+  assert.strictEqual(coverCall[1].require_album_art, true);
   assert.ok(
     documentObj.getElementById("global-alerts-container").innerHTML.includes("Disk write error"),
-    "Failed Save Settings (updateConfig) must surface error in global alerts"
+    "Failed auto-save must surface the backend error in global alerts"
   );
-  assert.strictEqual(
-    documentObj.getElementById("settings-save-status").textContent,
-    "✕ FAILED TO SAVE SETTINGS"
+  assert.ok(
+    documentObj.getElementById("settings-save-status").textContent.startsWith("✕ NOT SAVED"),
+    "Failed auto-save must say NOT SAVED"
   );
+  assert.strictEqual(coverCb.checked, false, "Failed auto-save must revert the checkbox to the saved value");
+
+  const uaInput = documentObj.getElementById("settings-mb-ua-input");
+  uaInput.value = "MyApp/1.0 (me@example.com)";
+  await uaInput.trigger("change");
+  await flushPromises();
+  const uaCall = apiCalls.find((c) => c[0] === "update_config" && c[1] && "musicbrainz_user_agent" in c[1]);
+  assert.ok(uaCall, "Editing the User-Agent must auto-save on change");
+  assert.strictEqual(uaCall[1].musicbrainz_user_agent, "MyApp/1.0 (me@example.com)");
+
+  // UX-12: active navigation tab exposes aria-current
+  const navHistory = navBtns.find((b) => b.attrs["data-nav"] === "history");
+  await navHistory.trigger("click");
+  assert.strictEqual(navHistory.getAttribute("aria-current"), "page", "Active nav tab must have aria-current=page");
+  assert.strictEqual(navBtns[0].getAttribute("aria-current"), "false");
+  const histAll = histBtns[0];
+  const histFailed = histBtns[2];
+  await histFailed.trigger("click");
+  assert.strictEqual(histFailed.getAttribute("aria-pressed"), "true");
+  assert.strictEqual(histAll.getAttribute("aria-pressed"), "false");
+  await navBtns[0].trigger("click");
+
+  // UX-11 + UX-02: multi-line links, Enter adds, Shift+Enter does not; partial failure keeps only failed lines
+  const urlBox = documentObj.getElementById("url-input");
+  urlBox.value = "https://www.youtube.com/watch?v=a\nhttps://example.com/x";
+  const enqueueCallsBefore = apiCalls.filter((c) => c[0] === "enqueue_urls").length;
+  await urlBox.trigger("keydown", { key: "Enter", shiftKey: true });
+  await flushPromises();
+  assert.strictEqual(apiCalls.filter((c) => c[0] === "enqueue_urls").length, enqueueCallsBefore, "Shift+Enter must not submit");
+  await urlBox.trigger("keydown", { key: "Enter", shiftKey: false });
+  await flushPromises();
+  const enqueueCall = apiCalls.filter((c) => c[0] === "enqueue_urls").pop();
+  assert.ok(enqueueCall && enqueueCall[1].includes("\n"), "Enter must submit all lines in one enqueue_urls call");
+  assert.strictEqual(urlBox.value, "https://example.com/x", "Only the lines that failed stay in the box");
+  const fb = documentObj.getElementById("fetching-feedback-area").innerHTML;
+  assert.ok(fb.includes("ADDED 1 TRACK"), "Feedback must report the tracks that were added");
+  assert.ok(fb.includes("ERR_SOURCE_INVALID_URL") && fb.includes("example.com"), "Feedback must list the failed line and its code");
+  assert.ok(
+    documentObj.getElementById("sr-status").textContent.includes("Added 1 track"),
+    "Add-link result must be announced through the live region"
+  );
+
+  // UX-04: disabled Start explains why
+  windowObj.pladazDispatchEvent({ event_type: "queue:updated", data: { tasks: [], queue_running: false, queue_halted: false } });
+  assert.ok(
+    documentObj.getElementById("queue-run-hint").textContent.includes("NOTHING TO START"),
+    "Empty queue must explain why Start is disabled"
+  );
+
+  // UX-03: queue row icon buttons have accessible names
+  windowObj.pladazDispatchEvent({ event_type: "queue:updated", data: { tasks: [
+    { task_id: "task-q1", entry_url: "u", status: "Queued", stage: null, progress_percent: 0, metadata: { title: "Row Song" }, has_cover: false, validation: null, warnings: [], error: null },
+  ], queue_running: false, queue_halted: false } });
+  const rowsHtml = documentObj.getElementById("queue-list-container").innerHTML;
+  assert.ok(rowsHtml.includes('aria-label="Remove Row Song from queue"'), "Row remove button must have an accessible name");
+  assert.ok(rowsHtml.includes('aria-label="Show 10 stages for Row Song"'));
+  assert.ok(rowsHtml.includes('aria-label="Track details for Row Song"'));
 
   // TEST 7: Browser Authentication (Option C: Detection, Recommendation, Consent Modal, and Verification)
   const navSettingsBtn = navBtns.find((b) => b.attrs["data-nav"] === "settings");
