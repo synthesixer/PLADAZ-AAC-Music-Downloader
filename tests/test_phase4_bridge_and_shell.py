@@ -496,8 +496,11 @@ def test_ui_bundle_offline_no_cdn_and_constraints() -> None:
         assert forbidden_cdn not in index_html
         assert forbidden_cdn not in built_css
 
-    # 2. TBA-023 exact placeholder in Board 04 Disclaimer modal
-    assert "[DISCLAIMER TEXT — wording to be supplied by the project owner]" in index_html
+    # 2. Board 04 shows the real Personal Use Disclaimer (DEC-054: owner delegated the wording), not the placeholder
+    assert "[DISCLAIMER TEXT" not in index_html
+    disclaimer = index_html.split('id="modal-disclaimer"', 1)[1].split("<!-- BOARD 09", 1)[0]
+    for required in ("personal use only", "YouTube's Terms of Service", "copyright", "not affiliated", "without warranty"):
+        assert required in disclaimer, required
 
     # 3. Board 12 (Choose Tracks Picker) excluded per user decision
     assert "modal-picker" not in index_html
