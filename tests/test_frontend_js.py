@@ -239,6 +239,13 @@ class FakeElement {
     }
   }
   focus() {}
+  appendChild(child) {
+    this.children.push(child);
+    if (!this.value && child && child.value) {
+      this.value = child.value;
+    }
+    return child;
+  }
   closest(sel) {
     if (sel === "[data-action]" && this.attrs["data-action"]) return this;
     return null;
@@ -357,6 +364,20 @@ const fakeApi = {
     },
     ytdlp_status: { present: true, version: "2026.10.01", expected_path: "yt-dlp.exe" },
     system_info: { version: "1.0.0", ytdlp_version: "2026.10.01", ffmpeg_version: "bundled" },
+    browser_detection: {
+      browsers: [
+        { key: "firefox", label: "Firefox", status: "available", registered_with_windows: true, profile_found: true, is_default: false },
+        { key: "chrome", label: "Google Chrome", status: "available", registered_with_windows: true, profile_found: true, is_default: true },
+      ],
+      recommended: "firefox",
+      recommendation_reason: "Firefox is recommended because Chrome-based browsers on Windows often block other apps from reading their cookies.",
+      default_browser: "chrome",
+    },
+    browser_cookies: {
+      enabled: false,
+      browser: null,
+      browser_label: null,
+    },
     startup_error: null,
   }),
   resolve_conflict: async (...args) => {
@@ -401,11 +422,49 @@ const fakeApi = {
     apiCalls.push(["update_config", partial]);
     return { success: false, error: { code: "ERR_CONFIG_CORRUPT", message_en: "Disk write error", recoverable: true } };
   },
+  select_browser_cookies: async (...args) => {
+    apiCalls.push(["select_browser_cookies", ...args]);
+    return {
+      success: true,
+      browser: args[0],
+      browser_label: args[0] === "firefox" ? "Firefox" : "Google Chrome",
+      check: {
+        state: "readable",
+        browser: args[0],
+        cookie_count: 30,
+        readable: true,
+        message: `PLADAZ can read cookies from ${args[0]}.`,
+        next_step: "Ready to download.",
+      },
+      config: { browser_cookies_enabled: true, browser_cookies_name: args[0] },
+    };
+  },
+  clear_browser_cookies: async (...args) => {
+    apiCalls.push(["clear_browser_cookies", ...args]);
+    return {
+      success: true,
+      browser: null,
+      browser_label: null,
+      enabled: false,
+      config: { browser_cookies_enabled: false, browser_cookies_name: null },
+    };
+  },
+  test_browser_cookies: async (...args) => {
+    apiCalls.push(["test_browser_cookies", ...args]);
+    return {
+      success: true,
+      browser: args[0],
+      check: { state: "readable", browser: args[0], cookie_count: 30, readable: true, message: "OK", next_step: "" },
+    };
+  },
 };
 
 const documentObj = {
   readyState: "complete",
   body: bodyEl,
+  createElement(tag) {
+    return new FakeElement("", tag.toUpperCase());
+  },
   getElementById(id) {
     if (!elementsById.has(id)) {
       elementsById.set(id, new FakeElement(id));
@@ -615,6 +674,53 @@ const flushPromises = async () => {
     documentObj.getElementById("settings-save-status").textContent,
     "✕ FAILED TO SAVE SETTINGS"
   );
+
+  // TEST 7: Browser Authentication (Option C: Detection, Recommendation, Consent Modal, and Verification)
+  const navSettingsBtn = navBtns.find((b) => b.attrs["data-nav"] === "settings");
+  await navSettingsBtn.trigger("click");
+  await flushPromises();
+
+  const bSelect = documentObj.getElementById("settings-browser-select");
+  assert.ok(bSelect.children.length >= 2, "settings-browser-select must be populated with detected browsers");
+  assert.strictEqual(bSelect.value, "firefox", "Recommended browser (firefox) must be selected by default");
+
+  const recTag = documentObj.getElementById("settings-browser-recommended-tag");
+  assert.strictEqual(recTag.classList.contains("hidden"), false, "Recommended badge must be visible when Firefox is selected");
+
+  const bStatus = documentObj.getElementById("settings-browser-status");
+  assert.strictEqual(bStatus.textContent, "OFF / NOT CONFIGURED");
+
+  // Clicking USE BROWSER opens consent modal
+  const consentModal = documentObj.getElementById("modal-browser-consent");
+  assert.strictEqual(consentModal.classList.contains("hidden"), true);
+  await documentObj.getElementById("settings-use-browser-btn").trigger("click");
+  assert.strictEqual(consentModal.classList.contains("hidden"), false, "Consent modal must open on USE BROWSER click");
+  assert.strictEqual(documentObj.getElementById("browser-consent-browser-label").textContent, "Firefox");
+
+  // Clicking CANCEL closes consent modal without activating
+  await documentObj.getElementById("browser-consent-cancel-btn").trigger("click");
+  assert.strictEqual(consentModal.classList.contains("hidden"), true, "Cancel must close consent modal");
+
+  // Re-open and confirm consent
+  await documentObj.getElementById("settings-use-browser-btn").trigger("click");
+  await documentObj.getElementById("browser-consent-continue-btn").trigger("click");
+  await flushPromises();
+
+  const selCall = apiCalls.find((c) => c[0] === "select_browser_cookies");
+  assert.ok(selCall, "Confirming consent must invoke select_browser_cookies");
+  assert.strictEqual(selCall[1], "firefox");
+  assert.ok(bStatus.textContent.toUpperCase().includes("ACTIVE: FIREFOX"), "Status pill must show ACTIVE: FIREFOX on success");
+  assert.ok(
+    documentObj.getElementById("settings-browser-feedback-msg").textContent.includes("PLADAZ can read cookies from firefox"),
+    "Plain-language feedback must display the cookie check outcome"
+  );
+
+  // Clearing browser cookies disables it
+  await documentObj.getElementById("settings-remove-browser-btn").trigger("click");
+  await flushPromises();
+  const clearBCall = apiCalls.find((c) => c[0] === "clear_browser_cookies");
+  assert.ok(clearBCall, "Removing browser cookies must call clear_browser_cookies()");
+  assert.strictEqual(bStatus.textContent, "OFF / NOT CONFIGURED");
 })().catch((err) => {
   console.error(err);
   process.exit(1);

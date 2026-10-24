@@ -14,7 +14,9 @@ import uuid
 
 from pladaz.domain.enums import AudioProcessMode
 from pladaz.domain.errors import (
+    BrowserCookiesError,
     ErrorCode,
+    SourceAuthRequiredError,
     SourceExtractionError,
     SourceInvalidUrlError,
     SourceNetworkTimeoutError,
@@ -27,7 +29,28 @@ from pladaz.domain.models import (
     StreamPlan,
     UpdateResult,
 )
+from pladaz.services.browser_auth import (
+    BrowserCookieCheck,
+    CHECK_TIMEOUT,
+    CHECK_UNSUPPORTED,
+    CHECK_YTDLP_MISSING,
+    build_cookie_check,
+    classify_cookie_store_error,
+    is_supported_browser,
+    parse_cookie_check_output,
+)
 from pladaz.services.logger import PladazLogger, redact_sensitive_text
+
+AUTH_REQUIRED_HINTS: tuple[str, ...] = (
+    "sign in to confirm you're not a bot",
+    "sign in to confirm your age",
+    "this video is available to this channel's members",
+    "join this channel to get access to members-only content",
+    "private video. sign in if you've been granted access",
+    "sign in if you've been granted access",
+    "login required",
+    "members-only",
+)
 
 # Official GitHub Release URL for standalone Windows yt-dlp.exe (confirmed by user for DEC-038)
 YTDLP_LATEST_RELEASE_URL: str = (
@@ -277,7 +300,11 @@ class DownloadSourceAdapter:
             binary_downloader or _default_binary_downloader
         )
 
-    def _build_base_cmd(self, cookies_path: Optional[Path] = None) -> list[str]:
+    def _build_base_cmd(
+        self,
+        cookies_path: Optional[Path] = None,
+        browser_cookies: Optional[str] = None,
+    ) -> list[str]:
         if not self.ytdlp_path.exists():
             raise SourceExtractionError(
                 message_en=f"yt-dlp executable was not found at '{self.ytdlp_path}'.",
@@ -293,14 +320,17 @@ class DownloadSourceAdapter:
             cookies_file = Path(cookies_path)
             if cookies_file.exists():
                 cmd.extend(["--cookies", str(cookies_file)])
+        elif browser_cookies and is_supported_browser(browser_cookies):
+            cmd.extend(["--cookies-from-browser", str(browser_cookies)])
         return cmd
 
     def _run_json_command(
         self,
         args: list[str],
         cookies_path: Optional[Path] = None,
+        browser_cookies: Optional[str] = None,
     ) -> dict[str, Any]:
-        cmd = self._build_base_cmd(cookies_path=cookies_path) + args
+        cmd = self._build_base_cmd(cookies_path=cookies_path, browser_cookies=browser_cookies) + args
         try:
             proc = subprocess.run(
                 cmd,
@@ -325,14 +355,19 @@ class DownloadSourceAdapter:
 
         if proc.returncode != 0:
             safe_stderr = redact_sensitive_text((proc.stderr or "").strip())
+            lowered = safe_stderr.lower()
             if safe_stderr and (
-                "timed out" in safe_stderr.lower()
-                or "timeout" in safe_stderr.lower()
+                "timed out" in lowered
+                or "timeout" in lowered
             ):
                 raise SourceNetworkTimeoutError(
                     message_en="Network connection timed out while fetching data from YouTube.",
                     details=safe_stderr,
                 )
+            if any(h in lowered for h in AUTH_REQUIRED_HINTS):
+                raise SourceAuthRequiredError(details=safe_stderr)
+            if browser_cookies and classify_cookie_store_error(safe_stderr):
+                raise BrowserCookiesError(details=safe_stderr)
             raise SourceExtractionError(
                 details=safe_stderr or f"yt-dlp exited with code {proc.returncode}",
             )
@@ -360,12 +395,14 @@ class DownloadSourceAdapter:
         self,
         url: str,
         cookies_path: Optional[Path] = None,
+        browser_cookies: Optional[str] = None,
     ) -> list[RawSourceEntry]:
         """Validate URL and extract flat list of RawSourceEntry for Single Track, Playlist, or Album."""
         clean_url = validate_youtube_url(url)
         data = self._run_json_command(
             ["--flat-playlist", "--dump-single-json", clean_url],
             cookies_path=cookies_path,
+            browser_cookies=browser_cookies,
         )
         return parse_flat_entries(data, original_url=clean_url)
 
@@ -373,12 +410,14 @@ class DownloadSourceAdapter:
         self,
         entry_url: str,
         cookies_path: Optional[Path] = None,
+        browser_cookies: Optional[str] = None,
     ) -> RawTrackInfo:
         """Fetch full metadata and available audio formats for a single track in one call."""
         clean_url = validate_youtube_url(entry_url)
         data = self._run_json_command(
             ["--no-playlist", "--dump-single-json", clean_url],
             cookies_path=cookies_path,
+            browser_cookies=browser_cookies,
         )
         return parse_track_info(data, entry_url=clean_url)
 
@@ -431,6 +470,7 @@ class DownloadSourceAdapter:
         progress_cb: Optional[ProgressCallback] = None,
         cancel_event: Optional[Event] = None,
         cookies_path: Optional[Path] = None,
+        browser_cookies: Optional[str] = None,
     ) -> Path:
         """Download the planned audio stream into `temp_dir` with progress reporting and cancellation support."""
         clean_url = validate_youtube_url(entry_url)
@@ -452,7 +492,7 @@ class DownloadSourceAdapter:
             output_template,
             clean_url,
         ]
-        cmd = self._build_base_cmd(cookies_path=cookies_path) + args
+        cmd = self._build_base_cmd(cookies_path=cookies_path, browser_cookies=browser_cookies) + args
 
         try:
             proc = subprocess.Popen(
@@ -536,6 +576,11 @@ class DownloadSourceAdapter:
 
         if proc.returncode != 0:
             safe_err = redact_sensitive_text((stderr_output or "").strip())
+            lowered = safe_err.lower()
+            if any(h in lowered for h in AUTH_REQUIRED_HINTS):
+                raise SourceAuthRequiredError(details=safe_err)
+            if browser_cookies and classify_cookie_store_error(safe_err):
+                raise BrowserCookiesError(details=safe_err)
             raise SourceExtractionError(
                 message_en="Failed to download audio stream from YouTube.",
                 details=safe_err or f"yt-dlp exited with code {proc.returncode}",
@@ -575,6 +620,47 @@ class DownloadSourceAdapter:
             progress_cb(max(0.0, min(100.0, pct)), speed_str, eta_str)
         except (ValueError, IndexError):
             pass
+
+    def check_browser_cookies(self, browser: str) -> BrowserCookieCheck:
+        """Explicitly test reading cookies from `browser` using yt-dlp (DEC-052).
+
+        Never collects, persists, or displays cookie secrets. Runs only upon explicit user consent.
+        """
+        if not is_supported_browser(browser):
+            return build_cookie_check(CHECK_UNSUPPORTED, browser)
+        if not self.ytdlp_path.exists():
+            return build_cookie_check(CHECK_YTDLP_MISSING, browser)
+
+        cmd = [
+            str(self.ytdlp_path),
+            "--no-warnings",
+            "--encoding",
+            "utf-8",
+            "-v",
+            "--ignore-config",
+            "--cookies-from-browser",
+            browser,
+        ]
+        try:
+            proc = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=20.0,
+                shell=False,
+                creationflags=_subprocess_creation_flags(),
+            )
+            combined = redact_sensitive_text((proc.stdout or "") + "\n" + (proc.stderr or ""))
+            return parse_cookie_check_output(combined, browser)
+        except subprocess.TimeoutExpired:
+            return build_cookie_check(CHECK_TIMEOUT, browser)
+        except Exception as exc:
+            safe_msg = redact_sensitive_text(str(exc))
+            if self._logger:
+                self._logger.warn("DownloadSourceAdapter", f"Cookie check failed for {browser}: {safe_msg}")
+            return build_cookie_check("failed", browser)
 
     def get_version(self, binary_path: Optional[Path] = None) -> Optional[str]:
         """Run `<binary_path> --version` and return the version string, or None if unavailable."""

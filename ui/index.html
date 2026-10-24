@@ -443,16 +443,53 @@
                 </label>
               </div>
 
-              <!-- 3. Cookies.txt (Optional) -->
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b-2 border-[var(--line)]">
-                <div>
-                  <div class="sil text-xs font-bold text-[var(--ink)]">3. COOKIES.TXT · OPTIONAL (NETSCAPE FORMAT)</div>
-                  <p class="text-xs text-[var(--violet-2)]">Used for age-restricted or member-only tracks. Cookie contents are never displayed or written to logs.</p>
+              <!-- 3. Browser Authentication & Cookies (Optional) -->
+              <div class="pb-3 border-b-2 border-[var(--line)] space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <div class="sil text-xs font-bold text-[var(--ink)]">3. BROWSER AUTHENTICATION &amp; COOKIES (OPTIONAL)</div>
+                    <p class="text-xs text-[var(--violet-2)]">Allows downloading age-restricted or member-only tracks using cookies from a browser you choose. No manual copying needed.</p>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span id="settings-browser-status" class="mono text-xs px-3 py-1.5 rounded-xl border-2 border-[var(--ink)] bg-[var(--soft)] font-bold">Not configured</span>
+                  </div>
                 </div>
-                <div class="flex items-center gap-2">
-                  <span id="settings-cookies-filename" class="mono text-xs px-3 py-1.5 rounded-xl border-2 border-[var(--ink)] bg-[var(--soft)]">Not selected</span>
-                  <button id="settings-choose-cookies-btn" type="button" class="pbtn">CHOOSE…</button>
-                  <button id="settings-remove-cookies-btn" type="button" class="pbtn text-[var(--err-ink)]">REMOVE</button>
+
+                <!-- Browser Selector & Actions -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[var(--soft)] p-3 rounded-xl border-2 border-[var(--ink)]">
+                  <div class="flex items-center gap-2 flex-1 min-w-0">
+                    <label for="settings-browser-select" class="sil text-xs font-bold text-[var(--ink)] shrink-0">BROWSER:</label>
+                    <select id="settings-browser-select" class="mono text-xs px-3 py-1.5 rounded-xl border-2 border-[var(--ink)] bg-[var(--paper)] text-[var(--ink)] flex-1 max-w-[280px]">
+                      <option value="">Scanning installed browsers…</option>
+                    </select>
+                    <span id="settings-browser-recommended-tag" class="sil text-xs px-2 py-0.5 rounded-full border border-[var(--ink)] bg-[var(--mint)] text-[var(--mint-ink)] font-bold hidden">RECOMMENDED</span>
+                  </div>
+                  <div class="flex items-center gap-2 shrink-0">
+                    <button id="settings-use-browser-btn" type="button" class="btn btn-p py-1.5 px-3 text-xs">USE BROWSER</button>
+                    <button id="settings-test-browser-btn" type="button" class="pbtn text-xs">TEST</button>
+                    <button id="settings-remove-browser-btn" type="button" class="pbtn text-[var(--err-ink)] text-xs">REMOVE</button>
+                  </div>
+                </div>
+
+                <!-- Plain-language Status / Guidance Feedback -->
+                <div id="settings-browser-feedback" class="text-xs space-y-1 p-2.5 rounded-xl border-2 border-[var(--ink)] bg-[var(--paper)] hidden">
+                  <div id="settings-browser-feedback-msg" class="font-bold text-[var(--ink)]"></div>
+                  <div id="settings-browser-feedback-step" class="text-[var(--violet-2)] leading-relaxed"></div>
+                </div>
+
+                <!-- Fallback: Manual cookies.txt import -->
+                <div class="pt-2 border-t border-dashed border-[var(--line)]">
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <span class="sil text-xs font-bold text-[var(--violet)]">MANUAL FALLBACK: COOKIES.TXT (NETSCAPE FORMAT)</span>
+                      <p class="text-xs text-[var(--violet-2)]">Use this if browser authentication is blocked by system encryption or permissions.</p>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                      <span id="settings-cookies-filename" class="mono text-xs px-3 py-1.5 rounded-xl border-2 border-[var(--ink)] bg-[var(--soft)]">Not selected</span>
+                      <button id="settings-choose-cookies-btn" type="button" class="pbtn text-xs">CHOOSE…</button>
+                      <button id="settings-remove-cookies-btn" type="button" class="pbtn text-[var(--err-ink)] text-xs">REMOVE</button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -797,6 +834,38 @@
             <button id="error-log-open-folder-btn" type="button" class="btn btn-s py-1.5 px-3">OPEN LOG FOLDER</button>
           </div>
           <button id="error-log-done-btn" type="button" class="btn btn-p py-1.5 px-4">CLOSE</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BROWSER AUTHENTICATION CONSENT MODAL (Option C: Explicit User Consent) -->
+  <div id="modal-browser-consent" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="browser-consent-title">
+    <div class="w-full max-w-[520px] rounded-[24px] border-[3px] border-[var(--ink)] bg-[var(--pinkbz)] p-4 shadow-[0_8px_0_#2B2540]">
+      <div class="rounded-2xl border-[2.5px] border-[var(--ink)] bg-[var(--paper)] p-5 space-y-4">
+        <div class="flex items-center gap-2">
+          <span class="sil text-xs px-2.5 py-1 rounded-full bg-[var(--chip)] text-[var(--ink)] border-2 border-[var(--ink)] font-bold">BROWSER AUTHENTICATION</span>
+        </div>
+        <h2 id="browser-consent-title" class="dela text-lg text-[var(--ink)]">USE COOKIES FROM <span id="browser-consent-target-name">BROWSER</span>?</h2>
+        <div class="text-xs text-[var(--ink)] leading-relaxed space-y-2">
+          <p>
+            PLADAZ can use authentication cookies from <strong id="browser-consent-browser-label">your browser</strong> so that age-restricted or member-only tracks can be downloaded without manual configuration.
+          </p>
+          <div class="rounded-xl border-2 border-[var(--ink)] bg-[var(--soft)] p-3 space-y-1">
+            <div class="sil font-bold text-[var(--ink)]">WHAT PLADAZ DOES:</div>
+            <ul class="list-disc list-inside space-y-0.5 text-[var(--violet-2)]">
+              <li>Reads only session cookies needed by the download tool.</li>
+              <li>Never reads, logs, or transmits passwords, personal data, or browsing history.</li>
+              <li>Does not copy raw cookie values into config files or log files.</li>
+            </ul>
+          </div>
+          <p class="text-[var(--violet-2)]">
+            You can revoke or switch this browser at any time in Settings.
+          </p>
+        </div>
+        <div class="flex items-center justify-end gap-2.5 pt-2 border-t-2 border-[var(--line)]">
+          <button id="browser-consent-cancel-btn" type="button" class="btn btn-s">CANCEL</button>
+          <button id="browser-consent-continue-btn" type="button" class="btn btn-p">ALLOW &amp; TEST</button>
         </div>
       </div>
     </div>

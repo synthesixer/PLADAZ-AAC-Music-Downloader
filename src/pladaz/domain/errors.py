@@ -12,6 +12,9 @@ class ErrorCode:
     ERR_SOURCE_INVALID_URL = "ERR_SOURCE_INVALID_URL"
     ERR_SOURCE_EXTRACTION_FAILED = "ERR_SOURCE_EXTRACTION_FAILED"
     ERR_SOURCE_NETWORK_TIMEOUT = "ERR_SOURCE_NETWORK_TIMEOUT"
+    # Browser-assisted authentication (DEC-052)
+    ERR_SOURCE_AUTH_REQUIRED = "ERR_SOURCE_AUTH_REQUIRED"
+    ERR_BROWSER_COOKIES_FAILED = "ERR_BROWSER_COOKIES_FAILED"
 
     # Audio
     ERR_AUDIO_FFMPEG_FAILED = "ERR_AUDIO_FFMPEG_FAILED"
@@ -198,7 +201,7 @@ class SourceExtractionError(PladazError):
         self,
         message_en: str = (
             "Failed to extract audio information from YouTube. "
-            "Check the URL or attach a valid cookies.txt file if the content is restricted."
+            "Check the URL. If the content needs a signed-in account, set up Browser Authentication in Settings."
         ),
         task_id: Optional[str] = None,
         details: Optional[str] = None,
@@ -210,6 +213,53 @@ class SourceExtractionError(PladazError):
             task_id=task_id,
             details=details,
         )
+
+
+class SourceAuthRequiredError(PladazError):
+    """Raised when YouTube reports that the content requires a signed-in account (DEC-052)."""
+
+    def __init__(
+        self,
+        message_en: str = (
+            "YouTube requires a signed-in account for this content. "
+            "In Settings › Browser Authentication, choose the browser where you are signed in to YouTube."
+        ),
+        task_id: Optional[str] = None,
+        details: Optional[str] = None,
+    ) -> None:
+        super().__init__(
+            code=ErrorCode.ERR_SOURCE_AUTH_REQUIRED,
+            message_en=message_en,
+            recoverable=True,
+            task_id=task_id,
+            details=details,
+        )
+
+
+class BrowserCookiesError(PladazError):
+    """Raised when yt-dlp cannot read cookies from the browser selected for authentication (DEC-052)."""
+
+    def __init__(
+        self,
+        message_en: Optional[str] = None,
+        task_id: Optional[str] = None,
+        details: Optional[str] = None,
+        browser: Optional[str] = None,
+    ) -> None:
+        if message_en is None:
+            name = browser.title() if browser else "selected browser"
+            message_en = (
+                f"PLADAZ could not read cookies from {name}. Open Settings › Browser Authentication "
+                "to check it again, choose another browser, or import a cookies.txt file."
+            )
+        super().__init__(
+            code=ErrorCode.ERR_BROWSER_COOKIES_FAILED,
+            message_en=message_en,
+            recoverable=True,
+            task_id=task_id,
+            details=details,
+        )
+        self.browser = browser
 
 
 class SourceNetworkTimeoutError(PladazError):

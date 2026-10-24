@@ -413,14 +413,15 @@ classDiagram
 
 ### 2.5 สัญญาของแต่ละโมดูล
 
-**(1) `DownloadSourceAdapter`** — `IR-007`, `IR-016`, `DEC-025`, `DEC-027`, `DEC-033`
+**(1) `DownloadSourceAdapter`** — `IR-007`, `IR-016`, `DEC-025`, `DEC-027`, `DEC-033`, `DEC-052`
 
-- `extract_entries(url, cookies_path)`: ใช้ `yt-dlp` แบบ flat เพื่อแตก Playlist/Album เป็นรายการลิงก์ย่อยอย่างเร็ว คืน `RawSourceEntry` (ยังไม่มี album, track number หรือ formats) ถ้าเป็นลิงก์เพลงเดี่ยวคืน 1 รายการ
-- `fetch_track_info(entry_url)`: **[Design]** เรียก `yt-dlp` แบบเต็มต่อ 1 แทร็ก (ไม่ดาวน์โหลดเสียง) ได้ทั้ง metadata และรายการ `formats` ในครั้งเดียว ใช้แก้ลำดับที่ขัดกันในเอกสารรุ่นเดิม (รุ่นเดิมเรียก `resolve_metadata` จากข้อมูล flat แล้วค่อย probe formats ทีหลัง)
+- `extract_entries(url, cookies_path, browser_cookies)`: ใช้ `yt-dlp` แบบ flat เพื่อแตก Playlist/Album เป็นรายการลิงก์ย่อยอย่างเร็ว คืน `RawSourceEntry` (ยังไม่มี album, track number หรือ formats) ถ้าเป็นลิงก์เพลงเดี่ยวคืน 1 รายการ รองรับการส่ง `browser_cookies` (`--cookies-from-browser`)
+- `fetch_track_info(entry_url, cookies_path, browser_cookies)`: **[Design]** เรียก `yt-dlp` แบบเต็มต่อ 1 แทร็ก (ไม่ดาวน์โหลดเสียง) ได้ทั้ง metadata และรายการ `formats` ในครั้งเดียว หากพบข้อความจำกัดสิทธิ์หรือต้องเข้าสู่ระบบ จะโยน `SourceAuthRequiredError` (`ERR_SOURCE_AUTH_REQUIRED`)
 - `plan_stream(info)`: ตาม `DEC-033`
   - มีสตรีม AAC-LC (`acodec == "mp4a.40.2"` ใน `m4a`) → เลือกตัวที่ดีที่สุด → `REMUX_AAC`
   - ไม่มี → เลือกสตรีมเสียงที่ดีที่สุด → `ENCODE_AAC_LC`
-- `download_stream(...)`: ดาวน์โหลดลง Temp เท่านั้น
+- `download_stream(...)`: ดาวน์โหลดลง Temp เท่านั้น รองรับทั้ง `cookies_path` (Netscape file) และ `browser_cookies`
+- `check_browser_cookies(browser)` (DEC-052): ตรวจสอบการอ่านคุกกี้จากเบราว์เซอร์ที่ระบุโดยรัน `yt-dlp --cookies-from-browser <browser>` โดยไม่ใส่ URL ไม่ต่อเน็ตเวิร์ก คืนผล `BrowserCookieCheck` เพื่อแสดงคำแนะนำภาษาง่าย
 - `update_ytdlp()` (DEC-038): ใช้ binary **`yt-dlp.exe`** ซึ่งแพ็กไว้ใน `_internal/bin/yt-dlp.exe` (และรองรับ fallback ค้นหาข้าง `PLADAZ.exe` หรือใน `bin/`) Adapter เรียกผ่าน `subprocess` (ผลข้อมูลอ่านจาก JSON ของ yt-dlp และความคืบหน้าอ่านจากเอาต์พุต) การอัปเดตทำโดยดาวน์โหลดไฟล์ใหม่ไว้เป็นไฟล์ชั่วคราว (`yt-dlp.tmp.exe`), ตรวจสอบ `--version` และสลับแทนที่แบบ atomic (`os.replace`) ตรงตำแหน่งที่ติดตั้ง ถ้าล้มเหลวให้ rollback คงตัวเดิมและส่ง `ERR_YTDLP_UPDATE_FAILED`
   - Plan ปรับถ้อยคำแล้วใน DEC-018, DEC-038, DEC-046 และหัวข้อ 5.3 ข้อ 4
 
@@ -509,6 +510,8 @@ classDiagram
   "disclaimer_accepted": false,
   "destination_path": "",
   "cookies_file_path": null,
+  "browser_cookies_name": null,
+  "browser_cookies_enabled": false,
   "require_album_art": false,
   "musicbrainz_user_agent": ""
 }
@@ -522,9 +525,13 @@ classDiagram
 
 | กลุ่ม | เมธอด | พารามิเตอร์ | คืนค่า | อ้างอิง |
 |---|---|---|---|---|
-| App | `get_initial_state()` | – | `{ version, config, disclaimer_accepted, sd_status, removable_drives, queue: [TaskDTO], queue_running, queue_halted, pending_conflict, ytdlp_status, system_info, startup_error }` | DEC-023, 026, 027, 050 |
+| App | `get_initial_state()` | – | `{ version, config, disclaimer_accepted, sd_status, removable_drives, queue: [TaskDTO], queue_running, queue_halted, pending_conflict, ytdlp_status, browser_detection, browser_cookies, system_info, startup_error }` | DEC-023, 026, 027, 050, 052 |
 | | `accept_disclaimer()` | – | `{ success }` | DEC-027 |
 | | `update_config(partial)` | `dict` (คีย์ที่รับ: `require_album_art: bool`, `musicbrainz_user_agent: str`, `destination_path: str`; คีย์อื่นหรือชนิดผิด → `ERR_CONFIG_INVALID`) | `{ success, config, sd_status }` | DEC-023, 031, 050, 051 |
+| | `detect_supported_browsers()` | – | `{ success, detection, configured_browser, configured_label, enabled }` | DEC-052 (Option C) |
+| | `test_browser_cookies(browser)` | `str` | `{ success, browser, browser_label, check, error }` | DEC-052 |
+| | `select_browser_cookies(browser)` | `str` | `{ success, browser, browser_label, check, config, error }` | DEC-052 |
+| | `clear_browser_cookies()` | – | `{ success, browser: null, browser_label: null, enabled: false, config }` | DEC-052 |
 | | `select_cookies_file()` | – | `{ success, selected_path, filename }` | DEC-027 |
 | | `clear_cookies_file()` | – | `{ success, selected_path: null, filename: null }` | DEC-027, 051 (บอร์ด 06) |
 | | `check_ytdlp_status()` | – | `{ success, present, version, expected_path }` | DEC-038, 050 (บอร์ด 09) |
@@ -696,7 +703,9 @@ IR-019 และ TC-019 ต้องการให้แจ้งเตือ�
 | หมวด | รหัส | สาเหตุ | การจัดการ |
 |---|---|---|---|
 | Source | `ERR_SOURCE_INVALID_URL` | ลิงก์ไม่ใช่ YouTube / YT Music | แจ้งทันที ไม่เข้าคิว |
-| | `ERR_SOURCE_EXTRACTION_FAILED` | ดึงข้อมูลไม่ได้ หรือเนื้อหาจำกัดสิทธิ์ | `Failed` + แนะนำตรวจลิงก์/แนบ `cookies.txt` |
+| | `ERR_SOURCE_EXTRACTION_FAILED` | ดึงข้อมูลไม่ได้จากสาเหตุทั่วไป | `Failed` + แนะนำตรวจลิงก์ |
+| | `ERR_SOURCE_AUTH_REQUIRED` | แทร็กจำกัดอายุหรือเป็นเนื้อหาสมาชิก ต้องยืนยันตัวตน (DEC-052) | `Failed` + แนะนำเปิด Browser Authentication หรือแนบ `cookies.txt` แล้วกด Retry |
+| | `ERR_BROWSER_COOKIES_FAILED` | อ่านคุกกี้จากเบราว์เซอร์ไม่สำเร็จ (เบราว์เซอร์ล็อกไฟล์/ระบบเข้ารหัสบล็อก/ไม่พบโปรไฟล์) (DEC-052) | `Failed` + แสดงคำแนะนำภาษาง่าย (ปิดเบราว์เซอร์ หรือเลือก Firefox หรือใช้ `cookies.txt`) |
 | | `ERR_SOURCE_NETWORK_TIMEOUT` | เครือข่ายหลุด | ลบ Temp, `Failed`, คิวไปเพลงถัดไปหรือ Retry |
 | Audio | `ERR_AUDIO_FFMPEG_FAILED` | FFmpeg ล้มเหลว | ลบ Temp, log stderr, `Failed` |
 | Metadata | `ERR_METADATA_TAGGING_FAILED` | `mutagen` เขียนแท็กไม่ได้ | ลบ Temp, `Failed` |

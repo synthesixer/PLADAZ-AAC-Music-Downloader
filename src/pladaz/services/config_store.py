@@ -17,6 +17,8 @@ from pladaz.services.logger import PladazLogger
 # Isolated in a single constant so it can be updated in one place if changed later.
 CONFIG_KEY_REQUIRE_ALBUM_ART: str = "require_album_art"
 CONFIG_KEY_MUSICBRAINZ_USER_AGENT: str = "musicbrainz_user_agent"
+CONFIG_KEY_BROWSER_COOKIES_NAME: str = "browser_cookies_name"
+CONFIG_KEY_BROWSER_COOKIES_ENABLED: str = "browser_cookies_enabled"
 
 SCHEMA_VERSION: int = 1
 
@@ -28,6 +30,8 @@ def get_default_config() -> dict[str, Any]:
         "disclaimer_accepted": False,
         "destination_path": "",
         "cookies_file_path": None,
+        CONFIG_KEY_BROWSER_COOKIES_NAME: None,
+        CONFIG_KEY_BROWSER_COOKIES_ENABLED: False,
         CONFIG_KEY_REQUIRE_ALBUM_ART: False,
         CONFIG_KEY_MUSICBRAINZ_USER_AGENT: "",
     }
@@ -126,6 +130,17 @@ class ConfigHistoryStore:
                     and not isinstance(parsed[CONFIG_KEY_REQUIRE_ALBUM_ART], bool)
                 ):
                     raise ValueError(f"'{CONFIG_KEY_REQUIRE_ALBUM_ART}' must be a boolean.")
+                if (
+                    CONFIG_KEY_BROWSER_COOKIES_ENABLED in parsed
+                    and not isinstance(parsed[CONFIG_KEY_BROWSER_COOKIES_ENABLED], bool)
+                ):
+                    raise ValueError(f"'{CONFIG_KEY_BROWSER_COOKIES_ENABLED}' must be a boolean.")
+                if (
+                    CONFIG_KEY_BROWSER_COOKIES_NAME in parsed
+                    and parsed[CONFIG_KEY_BROWSER_COOKIES_NAME] is not None
+                    and not isinstance(parsed[CONFIG_KEY_BROWSER_COOKIES_NAME], str)
+                ):
+                    raise ValueError(f"'{CONFIG_KEY_BROWSER_COOKIES_NAME}' must be a string or null.")
             except (OSError, json.JSONDecodeError, ValueError) as exc:
                 self._backup_corrupt_file(self.config_path, str(exc))
                 self._atomic_write_json(self.config_path, defaults)

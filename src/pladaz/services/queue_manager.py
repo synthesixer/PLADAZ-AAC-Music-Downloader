@@ -2,6 +2,7 @@
 
 from datetime import datetime, timezone
 import base64
+import inspect
 from pathlib import Path
 import shutil
 from threading import Event, Lock, Thread
@@ -43,6 +44,17 @@ DEFAULT_SD_POLL_INTERVAL_SEC: float = 2.0
 
 def _iso_now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _supports_kwarg(fn: Any, kwarg_name: str) -> bool:
+    try:
+        sig = inspect.signature(fn)
+        return (
+            kwarg_name in sig.parameters
+            or any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
+        )
+    except (ValueError, TypeError):
+        return True
 
 
 class DownloadQueueManager:
@@ -187,6 +199,16 @@ class DownloadQueueManager:
                 return p
         return None
 
+    def _get_cookies_config(self) -> tuple[Optional[Path], Optional[str]]:
+        cfg = self._config_store.load_config()
+        cookies_path = self._get_cookies_path()
+        browser_cookies: Optional[str] = None
+        if cfg.get("browser_cookies_enabled"):
+            raw_b = cfg.get("browser_cookies_name")
+            if raw_b and isinstance(raw_b, str) and raw_b.strip():
+                browser_cookies = raw_b.strip().lower()
+        return cookies_path, browser_cookies
+
     def _get_destination_root(self) -> Path:
         cfg = self._config_store.load_config()
         dest_str = str(cfg.get("destination_path") or "").strip()
@@ -207,8 +229,11 @@ class DownloadQueueManager:
         Does NOT start downloading automatically if the queue worker has not been started.
         """
         clean_url = validate_youtube_url(url)
-        cookies_path = self._get_cookies_path()
-        entries = self._source_adapter.extract_entries(clean_url, cookies_path=cookies_path)
+        cookies_path, browser_cookies = self._get_cookies_config()
+        extract_kwargs: dict[str, Any] = {"cookies_path": cookies_path}
+        if _supports_kwarg(self._source_adapter.extract_entries, "browser_cookies"):
+            extract_kwargs["browser_cookies"] = browser_cookies
+        entries = self._source_adapter.extract_entries(clean_url, **extract_kwargs)
 
         added_tasks: list[TrackTask] = []
         with self._lock:
@@ -586,10 +611,11 @@ class DownloadQueueManager:
 
             # Step 2: fetching_info
             self._set_task_stage(task, Stage.FETCHING_INFO)
-            cookies_path = self._get_cookies_path()
-            raw_info = self._source_adapter.fetch_track_info(
-                task.entry_url, cookies_path=cookies_path
-            )
+            cookies_path, browser_cookies = self._get_cookies_config()
+            fetch_kwargs: dict[str, Any] = {"cookies_path": cookies_path}
+            if _supports_kwarg(self._source_adapter.fetch_track_info, "browser_cookies"):
+                fetch_kwargs["browser_cookies"] = browser_cookies
+            raw_info = self._source_adapter.fetch_track_info(task.entry_url, **fetch_kwargs)
             self._check_interrupted(task_id, cancel_ev)
 
             # Step 3: resolving_metadata
@@ -662,14 +688,17 @@ class DownloadQueueManager:
                     eta_str=eta_str,
                 )
 
-            raw_audio_file = self._source_adapter.download_stream(
-                entry_url=task.entry_url,
-                plan=stream_plan,
-                temp_dir=task_temp_dir,
-                progress_cb=_on_dl_progress,
-                cancel_event=cancel_ev,
-                cookies_path=cookies_path,
-            )
+            dl_kwargs: dict[str, Any] = {
+                "entry_url": task.entry_url,
+                "plan": stream_plan,
+                "temp_dir": task_temp_dir,
+                "progress_cb": _on_dl_progress,
+                "cancel_event": cancel_ev,
+                "cookies_path": cookies_path,
+            }
+            if _supports_kwarg(self._source_adapter.download_stream, "browser_cookies"):
+                dl_kwargs["browser_cookies"] = browser_cookies
+            raw_audio_file = self._source_adapter.download_stream(**dl_kwargs)
             self._check_interrupted(task_id, cancel_ev)
 
             # Step 6b: processing_audio (FFmpeg remux or encode to M4A)

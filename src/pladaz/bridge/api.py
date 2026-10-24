@@ -20,6 +20,11 @@ from pladaz.domain.errors import (
     SDCardDisconnectedError,
     SourceExtractionError,
 )
+from pladaz.services.browser_auth import (
+    browser_label,
+    detect_browsers,
+    is_supported_browser,
+)
 from pladaz.services.config_store import (
     CONFIG_KEY_MUSICBRAINZ_USER_AGENT,
     CONFIG_KEY_REQUIRE_ALBUM_ART,
@@ -168,12 +173,14 @@ class BridgeAPI:
                 sd_dto = removable_dtos[0]
 
             ytdlp_info = self._build_ytdlp_status()
+            browser_detection = detect_browsers()
             startup_err = (
                 structured_error_to_dto(self._config_store.last_error)
                 if self._config_store.last_error is not None
                 else None
             )
 
+            b_name = cfg.get("browser_cookies_name")
             return {
                 "success": True,
                 "version": __version__,
@@ -186,6 +193,12 @@ class BridgeAPI:
                 "queue_halted": self._queue_manager.is_queue_halted(),
                 "pending_conflict": self._queue_manager.get_pending_conflict(),
                 "ytdlp_status": ytdlp_info,
+                "browser_detection": browser_detection.to_dict(),
+                "browser_cookies": {
+                    "enabled": bool(cfg.get("browser_cookies_enabled", False)),
+                    "browser": b_name,
+                    "browser_label": browser_label(b_name) if b_name else None,
+                },
                 "system_info": {
                     "version": __version__,
                     "ytdlp_version": ytdlp_info["version"] or "missing",
@@ -376,6 +389,94 @@ class BridgeAPI:
                 "success": True,
                 "selected_path": None,
                 "filename": None,
+            }
+        except Exception as exc:
+            return self._error_response(exc)
+
+    def detect_supported_browsers(self) -> dict[str, Any]:
+        """Detect supported installed browsers on the host system without reading cookie contents."""
+        try:
+            result = detect_browsers()
+            cfg = self._config_store.load_config()
+            configured_browser = cfg.get("browser_cookies_name")
+            return {
+                "success": True,
+                "detection": result.to_dict(),
+                "configured_browser": configured_browser,
+                "configured_label": browser_label(configured_browser) if configured_browser else None,
+                "enabled": bool(cfg.get("browser_cookies_enabled", False)),
+            }
+        except Exception as exc:
+            return self._error_response(exc)
+
+    def test_browser_cookies(self, browser: str) -> dict[str, Any]:
+        """Test whether yt-dlp can access cookies from the specified browser without downloading."""
+        try:
+            norm_name = (browser or "").strip().lower()
+            if not is_supported_browser(norm_name):
+                raise PladazError(
+                    code=ErrorCode.ERR_CONFIG_INVALID,
+                    message_en=f"Unsupported browser '{browser}'. Supported: chrome, firefox, edge, brave, opera, vivaldi, chromium.",
+                    recoverable=True,
+                )
+            check = self._source_adapter.check_browser_cookies(norm_name)
+            return {
+                "success": check.readable,
+                "browser": norm_name,
+                "browser_label": browser_label(norm_name),
+                "check": check.to_dict(),
+                "error": None if check.readable else {
+                    "code": ErrorCode.ERR_BROWSER_COOKIES_FAILED,
+                    "message_en": f"{check.message} {check.next_step}".strip(),
+                    "recoverable": True,
+                },
+            }
+        except Exception as exc:
+            return self._error_response(exc)
+
+    def select_browser_cookies(self, browser: str) -> dict[str, Any]:
+        """Confirm user consent, test cookie access, and persist the choice in config.json."""
+        try:
+            norm_name = (browser or "").strip().lower()
+            if not is_supported_browser(norm_name):
+                raise PladazError(
+                    code=ErrorCode.ERR_CONFIG_INVALID,
+                    message_en=f"Unsupported browser '{browser}'. Supported: chrome, firefox, edge, brave, opera, vivaldi, chromium.",
+                    recoverable=True,
+                )
+            check = self._source_adapter.check_browser_cookies(norm_name)
+            cfg = self._config_store.load_config()
+            cfg["browser_cookies_name"] = norm_name
+            cfg["browser_cookies_enabled"] = bool(check.readable)
+            self._config_store.save_config(cfg)
+            return {
+                "success": check.readable,
+                "browser": norm_name,
+                "browser_label": browser_label(norm_name),
+                "check": check.to_dict(),
+                "config": cfg,
+                "error": None if check.readable else {
+                    "code": ErrorCode.ERR_BROWSER_COOKIES_FAILED,
+                    "message_en": f"{check.message} {check.next_step}".strip(),
+                    "recoverable": True,
+                },
+            }
+        except Exception as exc:
+            return self._error_response(exc)
+
+    def clear_browser_cookies(self) -> dict[str, Any]:
+        """Disable Browser Authentication in config.json."""
+        try:
+            cfg = self._config_store.load_config()
+            cfg["browser_cookies_enabled"] = False
+            cfg["browser_cookies_name"] = None
+            self._config_store.save_config(cfg)
+            return {
+                "success": True,
+                "browser": None,
+                "browser_label": None,
+                "enabled": False,
+                "config": cfg,
             }
         except Exception as exc:
             return self._error_response(exc)

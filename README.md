@@ -21,6 +21,7 @@
   10. `copying`
 - **Cover Art Pipeline:** Extracted from YouTube stream thumbnail metadata (with MusicBrainz search fallback via `HttpExternalMetadataFetcher`), normalized to 800×800 JPEG (1:1), and embedded into the M4A atom `covr`. Missing cover art when `require_album_art = false` produces a `! No cover` (`WARN_VALIDATOR_NO_COVER`) warning badge on a `Completed` task — never a 5th task status.
 - **Pure-Python Audio Validation (No `ffprobe.exe`):** Validation is handled directly in pure Python via `mutagen.mp4.MP4` and `AudioValidatorService`, inspecting AAC-LC (`mp4a.40.2`) codec profile, sample rate, channels, bit depth, MP4 atom structure (`moov`, `trak`, `mdia`, `minf`, `stbl`, `stsd`), and embedded cover art. `ffprobe.exe` is completely omitted from the distribution, saving ~227.6 MB.
+- **Browser Authentication & Cookies (`DEC-052`):** For age-restricted or member-only content, users can authenticate using an installed browser (Option C: Automatic detection with explicit user consent modal). No manual copying of cookie values is needed. Netscape `cookies.txt` file import is retained as an optional fallback.
 - **Portable Storage & Binary Management (`DEC-023`, `DEC-038`):**
   - `config.json`, `history.json`, `logs/pladaz.log`, `temp/`, and `PLADAZ.exe` are located in the application root directory.
   - Runtime binaries (`ffmpeg.exe` and `yt-dlp.exe`) are bundled inside `_internal/bin/` (with fallback resolution to root `yt-dlp.exe` or `bin/yt-dlp.exe` supported).
@@ -97,7 +98,7 @@ dist/PLADAZ/
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\run_tests.ps1
 ```
-*(Runs unit, integration, and offline E2E suites with 71 passed tests (the live-network test is excluded), exiting with non-zero on failure).*
+*(Runs unit, integration, and offline E2E suites with 85 passed tests (the live-network test is excluded), exiting with non-zero on failure).*
 
 ### Run It Automatically on Every Commit
 ```powershell

@@ -35,10 +35,10 @@
 ## 2. สรุปจำนวนชุดทดสอบอัตโนมัติและเกณฑ์การบันทึกสถานะ
 
 ### 2.1 สรุปจำนวนการทดสอบอัตโนมัติ (`pytest`)
-- **จำนวนการทดสอบที่รวบรวมได้ทั้งหมด (Collected):** **59 รายการ** (ใน 14 ไฟล์ทดสอบ)
-- **ผลการรันชุดทดสอบออฟไลน์ทั้งหมด (`.\venv\Scripts\python.exe -m pytest -v -m "not network"`):** **`71 passed`**, `1 deselected` (`0 failed`, วันที่ 2026-10-24 หลังแก้ตามรายงานตรวจสอบ รวม `tests/integration/test_audit_fixes.py` 13 รายการ)
-  - **Unit Tests (`-m "unit"`):** **36 passed** (`tests/unit/` 34 รายการ + `tests/test_frontend_js.py` 2 รายการ)
-  - **Integration Tests (`-m "integration and not e2e"`):** **21 passed** (`tests/integration/` 15 รายการ + `tests/test_phase4_bridge_and_shell.py` 6 รายการ)
+- **จำนวนการทดสอบที่รวบรวมได้ทั้งหมด (Collected):** **86 รายการ** (ใน 15 ไฟล์ทดสอบ)
+- **ผลการรันชุดทดสอบออฟไลน์ทั้งหมด (`.\venv\Scripts\python.exe -m pytest -v -m "not network"`):** **`85 passed`**, `1 deselected` (`0 failed`, วันที่ 2026-10-24 รวมชุดทดสอบ Browser Authentication 14 รายการใหม่)
+  - **Unit Tests (`-m "unit"`):** **49 passed** (`tests/unit/` 47 รายการ รวม `test_browser_auth.py` 13 รายการ + `tests/test_frontend_js.py` 2 รายการ)
+  - **Integration Tests (`-m "integration and not e2e"`):** **22 passed** (`tests/integration/` 15 รายการ + `tests/test_phase4_bridge_and_shell.py` 7 รายการ รวมการทดสอบ BridgeAPI Browser Authentication)
   - **End-to-End Tests (`-m "e2e"`):** **2 รายการ**
     - ออฟไลน์ E2E (`test_bridge_e2e_full_queue_workflow_and_atom_verification`): **1 passed**
     - เครือข่ายจริง E2E (`test_bridge_e2e_live_network_download`): **1 skipped / deselected** เมื่อไม่ได้กำหนดตัวแปรสภาพแวดล้อม `PLADAZ_TEST_URLS` (รอ URL ทดสอบจากผู้ใช้)
@@ -164,6 +164,24 @@
   - ขนาด: `227,823,104` ไบต์ (`~227.8 MB`)
   - SHA-256: `589E50B766D251AFDF181DD664D40BD94407E200B019989FD7468C7D118A28D0`
 - **ข้อจำกัด:** ค่าแฮชเหล่านี้ไม่ครอบคลุมไฟล์อื่นใน `_internal\` (เช่น UI assets, DLL) และ build นี้ยังไม่ได้ทดสอบบน Windows สะอาด การ์ดจริง หรือเครื่อง ECHO
+
+### 5.5 ผลการทดสอบระบบ Browser Authentication & Consent (Option C — DEC-052)
+- **Unit Tests (`tests/unit/test_browser_auth.py` — 13 passed):**
+  - ตรวจสอบรายชื่อเบราว์เซอร์และป้ายกำกับ (`is_supported_browser`, `browser_label`)
+  - อัลกอริทึมการแนะนำเบราว์เซอร์: แนะนำ Firefox ก่อน Chromium เพื่อหลีกเลี่ยง DPAPI / App-Bound Encryption บน Windows
+  - การจำลอง Windows Registry (`HKLM/StartMenuInternet`, `HKCU/UserChoice`) ร่วมกับโฟลเดอร์โปรไฟล์ผู้ใช้จำลอง
+  - การแปลผลเอาต์พุต yt-dlp เป็นสถานะภาษาง่าย: `readable`, `encryption_blocked`, `browser_locked`, `profile_not_found`, `permission_denied`, `unsupported`
+  - ตรวจสอบคลาสและรหัสข้อผิดพลาด `ERR_SOURCE_AUTH_REQUIRED` และ `ERR_BROWSER_COOKIES_FAILED`
+- **Bridge Integration Tests (`tests/test_phase4_bridge_and_shell.py` — 7 passed):**
+  - ตรวจสอบ `detect_supported_browsers()`, `test_browser_cookies()`, `select_browser_cookies()`, `clear_browser_cookies()`
+  - ตรวจสอบการปฏิเสธเบราว์เซอร์ที่ไม่รองรับ (`ERR_CONFIG_INVALID`)
+  - ตรวจสอบการบันทึกสถานะ `browser_cookies_enabled` และ `browser_cookies_name` ลง `config.json` เฉพาะเมื่อตรวจสอบผ่าน
+- **Frontend DOM Harness Tests (`tests/test_frontend_js.py` — 2 passed):**
+  - ตรวจสอบการเรนเดอร์ dropdown เบราว์เซอร์และการแสดงป้าย `RECOMMENDED`
+  - ตรวจสอบการเปิดหน้าต่าง Explicit Consent Modal (`modal-browser-consent`) และการโฟกัสปุ่ม `CANCEL` ก่อน
+  - ตรวจสอบการปิดหน้าต่างด้วยปุ่ม Cancel และปุ่ม Esc
+  - ตรวจสอบการกด `ALLOW & TEST` ที่เรียก `select_browser_cookies`, อัปเดตสถานะป้ายเป็น `✓ ACTIVE: FIREFOX`, และแสดงข้อความชี้แจงผล
+  - ตรวจสอบการกด `REMOVE` เพื่อยกเลิกการเชื่อมต่อคุกกี้
 
 ---
 

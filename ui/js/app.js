@@ -58,6 +58,9 @@
     coverLoading: {},
     hadActiveRun: false,
     activeRunTaskIds: new Set(),
+    browserDetection: null,
+    browserCookies: { enabled: false, browser: null, browser_label: null },
+    pendingConsentBrowser: null,
   };
 
   function escapeHtml(val) {
@@ -814,6 +817,124 @@
   // =========================================================================
   // VIEW 06: SETTINGS (Board 06)
   // =========================================================================
+  function renderBrowserAuthSection() {
+    const selectEl = document.getElementById("settings-browser-select");
+    const recTagEl = document.getElementById("settings-browser-recommended-tag");
+    const statusEl = document.getElementById("settings-browser-status");
+    const useBtn = document.getElementById("settings-use-browser-btn");
+    const testBtn = document.getElementById("settings-test-browser-btn");
+    const removeBtn = document.getElementById("settings-remove-browser-btn");
+    if (!selectEl || !statusEl) return;
+
+    const detection = state.browserDetection;
+    const configured = state.browserCookies || { enabled: false, browser: null, browser_label: null };
+    const browsers = (detection && detection.browsers) || [];
+    const recommendedKey = detection ? detection.recommended : null;
+
+    const prevVal = selectEl.value;
+    selectEl.innerHTML = "";
+    if (browsers.length === 0) {
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "No supported browser detected";
+      opt.disabled = true;
+      selectEl.appendChild(opt);
+      if (useBtn) useBtn.disabled = true;
+      if (testBtn) testBtn.disabled = true;
+    } else {
+      browsers.forEach((b) => {
+        const opt = document.createElement("option");
+        opt.value = b.key;
+        const hints = [];
+        if (b.is_default) hints.push("Default");
+        if (b.key === recommendedKey) hints.push("Recommended");
+        const suffix = hints.length > 0 ? ` (${hints.join(", ")})` : "";
+        opt.textContent = `${b.label}${suffix}`;
+        selectEl.appendChild(opt);
+      });
+      const targetVal = configured.browser || prevVal || recommendedKey || (browsers[0] ? browsers[0].key : "");
+      if (targetVal) {
+        selectEl.value = targetVal;
+      }
+      if (useBtn) useBtn.disabled = false;
+      if (testBtn) testBtn.disabled = false;
+    }
+
+    const currentVal = selectEl.value;
+    if (recTagEl) {
+      if (currentVal && currentVal === recommendedKey) {
+        recTagEl.classList.remove("hidden");
+        recTagEl.title = (detection && detection.recommendation_reason) || "Recommended browser";
+      } else {
+        recTagEl.classList.add("hidden");
+      }
+    }
+
+    if (configured.enabled && configured.browser) {
+      const label = configured.browser_label || configured.browser.toUpperCase();
+      statusEl.textContent = `✓ ACTIVE: ${label}`;
+      statusEl.className = "mono text-xs px-3 py-1.5 rounded-xl border-2 border-[var(--ink)] bg-[var(--mint)] text-[var(--mint-ink)] font-bold";
+      if (removeBtn) removeBtn.disabled = false;
+    } else if (configured.browser) {
+      const label = configured.browser_label || configured.browser.toUpperCase();
+      statusEl.textContent = `! INACTIVE: ${label}`;
+      statusEl.className = "mono text-xs px-3 py-1.5 rounded-xl border-2 border-[var(--ink)] bg-[var(--warn)] text-[var(--warn-ink)] font-bold";
+      if (removeBtn) removeBtn.disabled = false;
+    } else {
+      statusEl.textContent = "OFF / NOT CONFIGURED";
+      statusEl.className = "mono text-xs px-3 py-1.5 rounded-xl border-2 border-[var(--ink)] bg-[var(--soft)] text-[var(--violet-2)] font-bold";
+      if (removeBtn) removeBtn.disabled = true;
+    }
+  }
+
+  function setBrowserFeedback(message, nextStep = "", isError = false) {
+    const container = document.getElementById("settings-browser-feedback");
+    const msgEl = document.getElementById("settings-browser-feedback-msg");
+    const stepEl = document.getElementById("settings-browser-feedback-step");
+    if (!container || !msgEl || !stepEl) return;
+
+    if (!message) {
+      container.classList.add("hidden");
+      msgEl.textContent = "";
+      stepEl.textContent = "";
+      return;
+    }
+
+    msgEl.textContent = message;
+    stepEl.textContent = nextStep || "";
+    container.className = isError
+      ? "text-xs space-y-1 p-2.5 rounded-xl border-2 border-[var(--ink)] bg-[var(--warn)] text-[var(--warn-ink)]"
+      : "text-xs space-y-1 p-2.5 rounded-xl border-2 border-[var(--ink)] bg-[var(--mint)] text-[var(--mint-ink)]";
+    container.classList.remove("hidden");
+  }
+
+  function openBrowserConsentModal(browserKey) {
+    const key = (browserKey || "").toLowerCase();
+    const candidate = state.browserDetection && state.browserDetection.browsers
+      ? state.browserDetection.browsers.find((b) => b.key === key)
+      : null;
+    const label = candidate ? candidate.label : key.toUpperCase();
+
+    state.pendingConsentBrowser = key;
+    const targetEl = document.getElementById("browser-consent-target-name");
+    const labelEl = document.getElementById("browser-consent-browser-label");
+    if (targetEl) targetEl.textContent = label.toUpperCase();
+    if (labelEl) labelEl.textContent = label;
+
+    const modal = document.getElementById("modal-browser-consent");
+    if (modal) {
+      modal.classList.remove("hidden");
+      const cancelBtn = document.getElementById("browser-consent-cancel-btn");
+      if (cancelBtn) cancelBtn.focus();
+    }
+  }
+
+  function closeBrowserConsentModal() {
+    state.pendingConsentBrowser = null;
+    const modal = document.getElementById("modal-browser-consent");
+    if (modal) modal.classList.add("hidden");
+  }
+
   function populateSettingsForm() {
     document.getElementById("settings-dest-input").value = state.config.destination_path || "";
     const reqCover = Boolean(state.config.require_album_art);
@@ -833,6 +954,16 @@
     document.getElementById("settings-ytdlp-version").textContent = ytdlpVer;
 
     document.getElementById("settings-mb-ua-input").value = state.config.musicbrainz_user_agent || "";
+
+    if (!state.browserDetection && window.PladazBridge && window.PladazBridge.detectSupportedBrowsers) {
+      window.PladazBridge.detectSupportedBrowsers().then((res) => {
+        if (res && res.success && res.detection) {
+          state.browserDetection = res.detection;
+          renderBrowserAuthSection();
+        }
+      });
+    }
+    renderBrowserAuthSection();
   }
 
   // =========================================================================
@@ -1385,6 +1516,107 @@
         reportCommandError(res, "Could not clear cookies.txt configuration.");
       }
     });
+
+    // Browser Authentication controls (Option C)
+    const bSelect = document.getElementById("settings-browser-select");
+    if (bSelect) {
+      bSelect.addEventListener("change", () => {
+        const recTag = document.getElementById("settings-browser-recommended-tag");
+        const recKey = state.browserDetection ? state.browserDetection.recommended : null;
+        if (recTag) {
+          if (bSelect.value && bSelect.value === recKey) {
+            recTag.classList.remove("hidden");
+          } else {
+            recTag.classList.add("hidden");
+          }
+        }
+      });
+    }
+
+    const useBrowserBtn = document.getElementById("settings-use-browser-btn");
+    if (useBrowserBtn) {
+      useBrowserBtn.addEventListener("click", () => {
+        const sel = document.getElementById("settings-browser-select");
+        const chosen = sel ? sel.value : "";
+        if (!chosen) return;
+        openBrowserConsentModal(chosen);
+      });
+    }
+
+    const consentCancelBtn = document.getElementById("browser-consent-cancel-btn");
+    if (consentCancelBtn) {
+      consentCancelBtn.addEventListener("click", closeBrowserConsentModal);
+    }
+
+    const consentContinueBtn = document.getElementById("browser-consent-continue-btn");
+    if (consentContinueBtn) {
+      consentContinueBtn.addEventListener("click", async () => {
+        const chosen = state.pendingConsentBrowser;
+        closeBrowserConsentModal();
+        if (!chosen) return;
+
+        setBrowserFeedback("Verifying browser cookies with yt-dlp…", "PLADAZ is checking if cookies can be read without downloading.");
+        const res = await window.PladazBridge.selectBrowserCookies(chosen);
+        if (res && res.success) {
+          state.browserCookies = {
+            enabled: true,
+            browser: res.browser,
+            browser_label: res.browser_label,
+          };
+          if (res.config) state.config = res.config;
+          const checkMsg = res.check ? res.check.message : "Cookies verified successfully.";
+          const checkStep = res.check ? res.check.next_step : "";
+          setBrowserFeedback(`✓ ${checkMsg}`, checkStep, false);
+        } else {
+          state.browserCookies = {
+            enabled: false,
+            browser: res.browser || chosen,
+            browser_label: res.browser_label || chosen,
+          };
+          if (res && res.config) state.config = res.config;
+          const errMsg = (res && res.check && res.check.message) || (res && res.error && res.error.message_en) || "Could not read cookies from selected browser.";
+          const nextStep = (res && res.check && res.check.next_step) || "Try closing the browser or choose another supported browser.";
+          setBrowserFeedback(`! ${errMsg}`, nextStep, true);
+        }
+        renderBrowserAuthSection();
+      });
+    }
+
+    const testBrowserBtn = document.getElementById("settings-test-browser-btn");
+    if (testBrowserBtn) {
+      testBrowserBtn.addEventListener("click", async () => {
+        const sel = document.getElementById("settings-browser-select");
+        const chosen = sel ? sel.value : (state.browserCookies && state.browserCookies.browser);
+        if (!chosen) return;
+
+        setBrowserFeedback(`Testing cookies from ${chosen}…`, "Testing reading cookie count via yt-dlp.");
+        const res = await window.PladazBridge.testBrowserCookies(chosen);
+        if (res && res.success) {
+          const checkMsg = res.check ? res.check.message : "Cookies can be read.";
+          const checkStep = res.check ? res.check.next_step : "";
+          setBrowserFeedback(`✓ ${checkMsg}`, checkStep, false);
+        } else {
+          const errMsg = (res && res.check && res.check.message) || (res && res.error && res.error.message_en) || "Cookie test failed.";
+          const nextStep = (res && res.check && res.check.next_step) || "Check guidance or try another browser.";
+          setBrowserFeedback(`! ${errMsg}`, nextStep, true);
+        }
+      });
+    }
+
+    const removeBrowserBtn = document.getElementById("settings-remove-browser-btn");
+    if (removeBrowserBtn) {
+      removeBrowserBtn.addEventListener("click", async () => {
+        const res = await window.PladazBridge.clearBrowserCookies();
+        if (res && res.success) {
+          state.browserCookies = { enabled: false, browser: null, browser_label: null };
+          if (res.config) state.config = res.config;
+          setBrowserFeedback("Browser Authentication disabled.", "Downloads will not use browser cookies unless configured again.", false);
+          renderBrowserAuthSection();
+        } else {
+          reportCommandError(res, "Could not disable browser authentication.");
+        }
+      });
+    }
     document.getElementById("settings-open-updater-btn").addEventListener("click", () => {
       document.getElementById("updater-current-ver").textContent =
         (state.ytdlpStatus && state.ytdlpStatus.version) || "Not installed";
@@ -1689,6 +1921,10 @@
         document.getElementById("modal-clear-history").classList.add("hidden");
         return;
       }
+      if (!document.getElementById("modal-browser-consent").classList.contains("hidden")) {
+        closeBrowserConsentModal();
+        return;
+      }
       const dismissible = ["modal-task-stages", "modal-queue-summary", "modal-error-log", "modal-about"];
       if (!state.ytdlpUpdating) dismissible.push("modal-updater");
       dismissible.forEach((id) => {
@@ -1800,6 +2036,12 @@
       state.queueHalted = Boolean(initRes.queue_halted);
       state.ytdlpStatus = initRes.ytdlp_status || state.ytdlpStatus;
       state.systemInfo = initRes.system_info || {};
+      state.browserDetection = initRes.browser_detection || null;
+      state.browserCookies = initRes.browser_cookies || {
+        enabled: Boolean(state.config.browser_cookies_enabled),
+        browser: state.config.browser_cookies_name || null,
+        browser_label: null,
+      };
       if (initRes.startup_error) {
         state.systemAlert = initRes.startup_error;
       }

@@ -288,6 +288,105 @@ def test_bridge_phase4_methods(tmp_path: Path) -> None:
     logger.close()
 
 
+def test_bridge_browser_cookies_methods(tmp_path: Path) -> None:
+    """Verify BridgeAPI detect_supported_browsers, test_browser_cookies, select_browser_cookies, and clear_browser_cookies."""
+    from pladaz.services.audio_processor import AudioProcessingService
+    from pladaz.services.browser_auth import BrowserCookieCheck
+    from pladaz.services.metadata_service import MetadataAlbumArtService
+    from pladaz.services.output_validator import OutputValidator
+
+    app_root = tmp_path / "app"
+    sd_root = tmp_path / "sd"
+    sd_root.mkdir(parents=True)
+
+    logger = PladazLogger(log_dir=app_root / "logs")
+    config_store = ConfigHistoryStore(base_dir=app_root, logger=logger)
+    config_store.save_config({"destination_path": str(sd_root), "disclaimer_accepted": True})
+    events = EventDispatcher()
+    sd_manager = SDCardManager(drive_probe=FakeDriveProbe(sd_root), logger=logger)
+    source_adapter = DownloadSourceAdapter(ytdlp_path=app_root / "yt-dlp.exe", logger=logger)
+
+    qm = DownloadQueueManager(
+        source_adapter=source_adapter,
+        metadata_service=MetadataAlbumArtService(logger=logger),
+        folder_organizer=SmartFolderOrganizer(),
+        audio_processor=AudioProcessingService(logger=logger),
+        output_validator=OutputValidator(),
+        sd_card_manager=sd_manager,
+        config_store=config_store,
+        event_dispatcher=events,
+        temp_root=app_root / "temp",
+        logger=logger,
+    )
+    bridge = BridgeAPI(
+        queue_manager=qm,
+        source_adapter=source_adapter,
+        sd_card_manager=sd_manager,
+        config_store=config_store,
+        log_file_path=logger.log_file_path,
+    )
+
+    # 1. detect_supported_browsers
+    detect_res = bridge.detect_supported_browsers()
+    assert detect_res["success"] is True
+    assert "detection" in detect_res
+    assert detect_res["configured_browser"] is None
+    assert detect_res["enabled"] is False
+
+    # 2. test_browser_cookies with unsupported browser
+    bad_res = bridge.test_browser_cookies("internet_explorer")
+    assert bad_res["success"] is False
+    assert bad_res["error"]["code"] == "ERR_CONFIG_INVALID"
+
+    # 3. test_browser_cookies with successful check
+    source_adapter.check_browser_cookies = lambda b: BrowserCookieCheck(  # type: ignore[method-assign]
+        state="readable",
+        browser=b,
+        cookie_count=50,
+        message=f"PLADAZ can read cookies from {b}.",
+        next_step="Ready to download.",
+    )
+    test_res = bridge.test_browser_cookies("firefox")
+    assert test_res["success"] is True
+    assert test_res["browser"] == "firefox"
+    assert test_res["check"]["readable"] is True
+    assert test_res["check"]["cookie_count"] == 50
+
+    # 4. select_browser_cookies success persists in config
+    sel_res = bridge.select_browser_cookies("firefox")
+    assert sel_res["success"] is True
+    assert sel_res["browser"] == "firefox"
+    assert sel_res["config"]["browser_cookies_enabled"] is True
+    assert sel_res["config"]["browser_cookies_name"] == "firefox"
+
+    init_state = bridge.get_initial_state()
+    assert init_state["browser_cookies"]["enabled"] is True
+    assert init_state["browser_cookies"]["browser"] == "firefox"
+
+    # 5. select_browser_cookies failure (e.g. database locked) does not enable
+    source_adapter.check_browser_cookies = lambda b: BrowserCookieCheck(  # type: ignore[method-assign]
+        state="browser_locked",
+        browser=b,
+        cookie_count=None,
+        message=f"{b} is locked.",
+        next_step="Close browser.",
+    )
+    sel_fail = bridge.select_browser_cookies("chrome")
+    assert sel_fail["success"] is False
+    assert sel_fail["error"]["code"] == "ERR_BROWSER_COOKIES_FAILED"
+    assert sel_fail["config"]["browser_cookies_enabled"] is False
+
+    # 6. clear_browser_cookies disables in config
+    clear_res = bridge.clear_browser_cookies()
+    assert clear_res["success"] is True
+    assert clear_res["enabled"] is False
+    assert clear_res["browser"] is None
+    cfg = config_store.load_config()
+    assert cfg["browser_cookies_enabled"] is False
+    assert cfg["browser_cookies_name"] is None
+    logger.close()
+
+
 def test_cancel_active_task_halts_queue_waiting_for_resume(tmp_path: Path) -> None:
     """Verify Board 11 decision: cancelling an active Downloading task marks it Failed (ERR_TASK_CANCELLED)
     and halts the queue so remaining Queued tasks stay Queued until resume_queue() is called."""
